@@ -152,7 +152,7 @@ for p = 1:5
     
     for i = 2:N-1
        for j = 2:N-1
-           current_error = abs(U(i,j) - u(h*(i-1), h*(j-1), tau*m));
+           current_error = abs(U(i,j) - u(h*(i-1), h*(j-1), tau*M));
            if current_error > max_nodal_error
               max_nodal_error = current_error; 
            end
@@ -164,8 +164,11 @@ for p = 1:5
     
     % Write data to table
     table_data(p,1) = h;
-    table_data(p,2) = tau;
-    table_data(p,3) = max_nodal_error;
+    table_data(p,2) = max_nodal_error;
+    if p ~= 1
+       table_data(p,3) = log2(table_data(p-1,2) / table_data(p,2)); 
+    end
+    
     table_data(p,4) = mean_sq_error;
     if p ~= 1
        table_data(p,5) = log2(table_data(p-1,4) / table_data(p,4)); 
