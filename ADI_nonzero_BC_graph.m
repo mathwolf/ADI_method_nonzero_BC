@@ -1,5 +1,6 @@
 function ADI_nonzero_BC_graph()
-% ADI method for solution of parabolic PDEs with Dirichlet boundary
+
+% ADI method for solution of parabolic PDE with Dirichlet boundary
 % conditions. This program tests the method using the function
 % e^(x+y+t) using spatial and temporal grids with spacing 0.01.  The
 % exact solution, approximate solution, and error are displayed
@@ -7,7 +8,6 @@ function ADI_nonzero_BC_graph()
 
 % Use a uniform spatial grid of 0.01 in both x and y
 N = 101;
-%N = 11;
 h = 1./(N-1);
 
 % Use a temporal spacing of the same size, go from 0 to 1
@@ -20,7 +20,7 @@ a = 1.;
 % Array of points used for plots
 plot_data = zeros(N,N,6);
 
-% Set up array of gridpoints and fill in with initial conditions
+% Set up gridpoints and fill in with initial conditions
 U = sparse(N,N);
 for i = 1:N
    for j = 1:N
@@ -34,18 +34,19 @@ Bh = (1/h^2) * spdiags([-ones(N-2,1), 2*ones(N-2,1), -ones(N-2,1)], ...
                         [-1,0,1], N-2, N-2);
 R = chol(speye(N-2) + (a*tau/2)*Bh);
 
-% Matrix used to store gridpoints in alternating direction
+% Matrix used to store gridpoints for alternating direction
 U_twiddles = sparse(N,N);
 
 % Array of values for forcing term
 load_vector = sparse(N,N);
 
+% Vector of boundary values used on RHS. Only the first and last entry
+% can be nonzero.
 boundary_term = sparse(N-2,1);
-
 
 % Evaluate each timestep
 for m = 1:M
-    % Create an array for the value of the forcing term at each 
+    % Create an array for the forcing term at each 
     % gridpoint at one half of a timestep
     for i = 1:N
        for j = 1:N
@@ -74,7 +75,7 @@ for m = 1:M
     % Find the alternate matrix U_twiddles 
     % Need to solve system once for each i = 2,...,N-1
     for i = 2:N-1  
-                boundary_term(1,1) = U_twiddles(1,i);
+        boundary_term(1,1) = U_twiddles(1,i);
         boundary_term(N-2,1) = U_twiddles(N,i);
         b = (a*tau)/(2*h^2) * U(2:N-1,i-1) + ...
             (1 - 2*(a*tau)/(2*h^2)) * U(2:N-1,i) + ...
@@ -110,31 +111,18 @@ for m = 1:M
         for i = 1:N
            for j = 1:N
               plot_data(i,j,1) = U(i,j);
-              plot_data(i,j,2) = u(h*(i-1), h*(j-1), tau*(m-1));
+              plot_data(i,j,2) = u(h*(i-1), h*(j-1), tau*m);
               plot_data(i,j,3) = plot_data(i,j,1) - plot_data(i,j,2);
            end
         end
-    elseif m == 5
+    elseif m == M
         for i = 1:N
            for j = 1:N
-              plot_data(i,j,3) = U(i,j) - ...
-                  u(h*(i-1), h*(j-1), tau*(m-1)); 
+              plot_data(i,j,4) = U(i,j);
+              plot_data(i,j,5) = u(h*(i-1), h*(j-1), tau*m);
+              plot_data(i,j,6) = plot_data(i,j,1) - plot_data(i,j,2);
            end
         end 
-    elseif m == 30
-        for i = 1:N
-           for j = 1:N
-              plot_data(i,j,4) = U(i,j) - ...
-                  u(h*(i-1), h*(j-1), tau*(m-1)); 
-           end
-        end 
-    elseif m == 70
-        for i = 1:N
-           for j = 1:N
-               plot_data(i,j,5) = U(i,j);
-           end
-        end
-        
     end
 end
 
@@ -142,33 +130,49 @@ end
 X = linspace(0., 1., N);
 Y = linspace(0., 1., N);
 
-figure(1)
-surf(X,Y,plot_data(:,:,1));
-colormap winter;
-xlabel('x');
-ylabel('y');
-%title('Approximation');
+figure
+subplot(2,3,1)
+surf(X,Y,plot_data(:,:,1))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Approximate solution after one timestep')
 
-figure(2)
-surf(X,Y,plot_data(:,:,2));
-colormap winter;
-xlabel('x');
-ylabel('y');
+subplot(2,3,2)
+surf(X,Y,plot_data(:,:,2))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Exact solution after one timestep')
 
-%title('Exact solution');
-
-
-figure(3)
+subplot(2,3,3)
 surf(X,Y,plot_data(:,:,3));
 colormap winter;
+xlabel('x')
+ylabel('y')
+title('Error after one timestep')
 
-figure(4)
-surf(X,Y,plot_data(:,:,4));
-colormap winter;
+subplot(2,3,4)
+surf(X,Y,plot_data(:,:,4))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Approximate solution after final timestep')
 
-figure(5)
-surf(X,Y,plot_data(:,:,5));
+subplot(2,3,5)
+surf(X,Y,plot_data(:,:,5))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Exact solution after final timestep')
+
+subplot(2,3,6)
+surf(X,Y,plot_data(:,:,6));
 colormap winter;
+xlabel('x')
+ylabel('y')
+title('Error after final timestep')
+
 
 end
 
