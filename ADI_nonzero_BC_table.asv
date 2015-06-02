@@ -1,8 +1,6 @@
 function ADI_nonzero_BC_table()
-% ADI method for solution of parabolic PDE with Dirichlet boundary
-% conditions. This program tests the method using the function
-% e^(x+y+t).  It uses a range of grid sizes and displays
-% the associated error measurements in a table.
+% Summary of this function goes here
+%   Detailed explanation goes here
 
 % Table for storing error data
 table_data = zeros(5,5);
@@ -31,6 +29,8 @@ for p = 1:5
             U(i,j) = g1(h*(i-1), h*(j-1)); 
         end
     end
+
+
 
     % Matrices used on LHS of ADI method
     Bh = (1/h^2) * spdiags([-ones(N-2,1), 2*ones(N-2,1), -ones(N-2,1)], ...
@@ -74,9 +74,12 @@ for p = 1:5
                 a*tau/(4*h^2) * g2(1, h*j, tau*(m-1));       
         end
     
+
+    
         % Find the alternate matrix U_twiddles 
         % Need to solve system once for each i = 2,...,N-1
-        for i = 2:N-1          
+        for i = 2:N-1  
+        
             boundary_term(1,1) = U_twiddles(1,i);
             boundary_term(N-2,1) = U_twiddles(N,i);
             b = (a*tau)/(2*h^2) * U(2:N-1,i-1) + ...
@@ -84,6 +87,17 @@ for p = 1:5
                 (a*tau)/(2*h^2) * U(2:N-1,i+1) + ...
                 (tau/2)*load_vector(2:N-1,i) + ...
                 (a*tau)/(2*h^2) * boundary_term(:,1);
+
+        %{
+        b = (speye(N-2) - (a*tau/2)*Bh) * U(i,:)' + ...
+            (tau/2)*load_vector(i,:)';
+        %}
+        %{
+        if m == 1
+           disp(full((speye(N-2) - (a*tau/2)*Bh) * U(i,:)'));
+           disp(full(b)); 
+        end
+            %}
             b = R'\b;
             U_twiddles(2:N-1,i) = R\b;
         end
