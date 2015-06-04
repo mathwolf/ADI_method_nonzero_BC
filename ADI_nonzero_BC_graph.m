@@ -7,117 +7,113 @@ function ADI_nonzero_BC_graph()
 % graphically.
 
 % Use a uniform spatial grid of 0.01 in both x and y
-N = 101;
-h = 1./(N-1);
+N = 100;
+h = 1./N;
 
 % Use a temporal spacing of the same size, go from 0 to 1
 tau = 0.01;
 M = 101;
 
-% Permittivity of material
-a = 1.;
-
 % Array of points used for plots
-plot_data = zeros(N,N,6);
+plot_data = zeros(N+1,N+1,6);
 
 % Set up gridpoints and fill in with initial conditions
-U = sparse(N,N);
-for i = 1:N
-   for j = 1:N
-      U(i,j) = g1(h*(i-1), h*(j-1)); 
+U = zeros(N+1,N+1);
+for i = 0:N
+   for j = 0:N
+      U(i+1, j+1) = g1(h*i, h*j); 
    end
 end
 
-% Matrix used on left hand side of ADI method
-% Use Cholesky factorization to solve system efficiently
-Bh = (1/h^2) * spdiags([-ones(N-2,1), 2*ones(N-2,1), -ones(N-2,1)], ...
-                        [-1,0,1], N-2, N-2);
-R = chol(speye(N-2) + (a*tau/2)*Bh);
+% Create tridiagonal matrix used on left hand side of ADI method
+Bh = (1/h^2) * spdiags([-ones(N-1,1), 2*ones(N-1,1), -ones(N-1,1)], ...
+                        [-1,0,1], N-1, N-1);
+A = speye(N-1) + (tau/2)*Bh;
 
-% Matrix used to store gridpoints for alternating direction
-U_twiddles = sparse(N,N);
+% Matrix V used on left hand side of formulas
+V = zeros(N+1,N+1);
 
 % Array of values for forcing term
-load_vector = sparse(N,N);
+load_array = zeros(N+1,N+1);
 
 % Vector of boundary values used on RHS. Only the first and last entry
 % can be nonzero.
-boundary_term = sparse(N-2,1);
+boundary_term = zeros(N-1,1);
 
 % Evaluate each timestep
 for m = 1:M
     % Create an array for the forcing term at each 
     % gridpoint at one half of a timestep
-    for i = 1:N
-       for j = 1:N
-          load_vector(i,j) = (1/2)*(f(h*(i-1), h*(j-1), tau*(m-1)) + ...
-              f(h*(i-1), h*(j-1), tau*m)); 
+    for i = 0:N
+       for j = 0:N
+          load_array(i+1,j+1) = (1/2)*(f(h*i, h*j, tau*(m-1)) + ...
+              f(h*i, h*j, tau*m)); 
+       end
+    end
+    
+    % Create an array of values for V at each interior gridpoint
+    % and at gridpoints along the x-boundary
+    for i = 0:N
+       for j = 1:N-1
+          V(i+1,j+1) = U(i+1,j+1) + ...
+              (tau / (4*h^2)) * (U(i+1,j) - 2*U(i+1,j+1) + U(i+1,j+2));
        end
     end
     
     % Find the boundary values for the alternating direction.  Only the
     % values along the x boundary are needed by the formulas.
-    for j = 2:N-1
-       U_twiddles(1,j) = -a*tau/(4*h^2) * g2(0, h*(j-2), tau*m) + ...
-           (1/2 + a*tau/(2*h^2)) * g2(0, h*(j-1), tau*m) + ...
-           -a*tau/(4*h^2) * g2(0, h*j, tau*m) + ...
-           a*tau/(4*h^2) * g2(0, h*(j-2), tau*(m-1)) + ...
-           (1/2 - a*tau/(2*h^2)) * g2(0, h*(j-1), tau*(m-1)) + ...
-           a*tau/(4*h^2) * g2(0, h*j, tau*(m-1));
-       U_twiddles(N,j) = -a*tau/(4*h^2) * g2(1, h*(j-2), tau*m) + ...
-           (1/2 + a*tau/(2*h^2)) * g2(1, h*(j-1), tau*m) + ...
-           -a*tau/(4*h^2) * g2(1, h*j, tau*m) + ...
-           a*tau/(4*h^2) * g2(1, h*(j-2), tau*(m-1)) + ...
-           (1/2 - a*tau/(2*h^2)) * g2(1, h*(j-1), tau*(m-1)) + ...
-           a*tau/(4*h^2) * g2(1, h*j, tau*(m-1));       
+    for j = 1:N-1
+       U(1,j+1) = (1/2) * g2(0, h*j, tau*m) ...
+           - (tau/(4*h^2)) * (g2(0, h*(j-1), tau*m) - ...
+                2*g2(0, h*j, tau*m) + g2(0, h*(j+1), tau*m)) ...
+           + (1/2) * V(1,j+1);
+       U(N+1,j+1) = (1/2) * g2(h*N, h*j, tau*m) ...
+           - (tau/(4*h^2)) * (g2(h*N, h*(j-1), tau*m) - ...
+                2*g2(h*N, h*j, tau*m) + g2(h*N, h*(j+1), tau*m)) ...
+           + (1/2) * V(N+1,j+1);
     end
     
-    % Find the alternate matrix U_twiddles 
-    % Need to solve system once for each i = 2,...,N-1
-    for i = 2:N-1  
-        boundary_term(1,1) = U_twiddles(1,i);
-        boundary_term(N-2,1) = U_twiddles(N,i);
-        b = (a*tau)/(2*h^2) * U(2:N-1,i-1) + ...
-            (1 - 2*(a*tau)/(2*h^2)) * U(2:N-1,i) + ...
-            (a*tau)/(2*h^2) * U(2:N-1,i+1) + ...
-            (tau/2)*load_vector(2:N-1,i) + ...
-            (a*tau)/(2*h^2) * boundary_term(:,1);
-        b = R'\b;
-        U_twiddles(2:N-1,i) = R\b;
+    % Find the alternate matrix at the half timestep
+    % Need to solve system once for each j = 2,...,N
+    for j = 1:N-1  
+        boundary_term(1,1) = U(1,j+1);
+        boundary_term(N-1,1) = U(N+1,j+1);
+        b = V(2:N,j+1) + ...
+            (tau/2) * load_array(2:N,j+1) + ...
+            (tau/(2*h^2)) * boundary_term(:,1);
+        U(2:N,j+1) = A\b;
     end
     
-    % Now find the interior points for next U
-    % Solve system one for each j = 2, ... , N-1
-    for j = 2:N-1        
-       boundary_term(1,1) = g2(h*(j-1), 0, tau*m) - U(j,1);
-       boundary_term(N-2,1) = g2(h*(j-1), 1, tau*m) - U(j,N);
-       b = 2*U_twiddles(j,2:N-1)' - ...
-           (speye(N-2) - (a*tau/2)*Bh) *  U(j,2:N-1)' + ...
-           (a*tau)/(2*h^2) * boundary_term(:,1);
-       b = R'\b;
-       U(j,2:N-1) = (R\b)';       
+    % Now find the interior points for next whole timestep
+    % Solve system one for each i = 2, ... , N
+    for i = 1:N-1        
+       boundary_term(1,1) = g2(h*i, 0, tau*m);
+       boundary_term(N-1,1) = g2(h*i, h*N, tau*m);
+       b = 2*U(i+1,2:N)' - V(i+1,2:N)' + ...
+           (tau/(2*h^2)) * boundary_term(:,1);
+       U(i+1,2:N) = (A\b)';       
     end
     
     % Update boundary points
-    for i = 1:N
-       U(1,i) = g2(0, h*(i-1), tau*m); 
-       U(N,i) = g2(1, h*(i-1), tau*m);
-       U(i,1) = g2(h*(i-1), 0, tau*m);
-       U(i,N) = g2(h*(i-1), 1, tau*m);
+    for i = 0:N
+       U(1,i+1) = g2(0, h*i, tau*m); 
+       U(N+1,i+1) = g2(h*N, h*i, tau*m);
+       U(i+1,1) = g2(h*i, 0, tau*m);
+       U(i+1,N+1) = g2(h*i, h*N, tau*m);
     end
     
     % Store data for plotting on selected steps    
     if m == 1
-        for i = 1:N
-           for j = 1:N
+        for i = 1:N+1
+           for j = 1:N+1
               plot_data(i,j,1) = U(i,j);
               plot_data(i,j,2) = u(h*(i-1), h*(j-1), tau*m);
               plot_data(i,j,3) = plot_data(i,j,1) - plot_data(i,j,2);
            end
         end
     elseif m == M
-        for i = 1:N
-           for j = 1:N
+        for i = 1:N+1
+           for j = 1:N+1
               plot_data(i,j,4) = U(i,j);
               plot_data(i,j,5) = u(h*(i-1), h*(j-1), tau*m);
               plot_data(i,j,6) = plot_data(i,j,1) - plot_data(i,j,2);
@@ -127,8 +123,8 @@ for m = 1:M
 end
 
 % Create plots
-X = linspace(0., 1., N);
-Y = linspace(0., 1., N);
+X = linspace(0., 1., N+1);
+Y = linspace(0., 1., N+1);
 
 figure
 subplot(2,3,1)
