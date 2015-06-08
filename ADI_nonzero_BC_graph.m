@@ -56,7 +56,7 @@ for m = 1:M
     for i = 0:N
        for j = 1:N-1
           V(i+1,j+1) = U(i+1,j+1) + ...
-              (tau / (4*h^2)) * (U(i+1,j) - 2*U(i+1,j+1) + U(i+1,j+2));
+              (tau / (2*h^2)) * (U(i+1,j) - 2*U(i+1,j+1) + U(i+1,j+2));
        end
     end
     
