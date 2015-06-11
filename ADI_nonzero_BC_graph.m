@@ -1,5 +1,7 @@
 function ADI_nonzero_BC_graph()
 
+% Matlab R2013a
+
 % ADI method for solution of parabolic PDE with Dirichlet boundary
 % conditions. This program tests the method using the function
 % e^(x+y+t) using spatial and temporal grids with spacing 0.01.  The
