@@ -30,14 +30,14 @@ Bh = (1/h^2) * spdiags([-ones(N-1,1), 2*ones(N-1,1), -ones(N-1,1)], ...
                         [-1,0,1], N-1, N-1);
 A = speye(N-1) + (tau/2)*Bh;
 
-% Matrix V used on left hand side of formulas
+% Matrix V used on RHS of matrix formulas
 V = zeros(N+1,N+1);
 
 % Array of values for forcing term
 load_array = zeros(N+1,N+1);
 
-% Vector of boundary values used on RHS. Only the first and last entry
-% can be nonzero.
+% Vector of boundary values used on RHS of matrix formulas. Only the first 
+% and last entry can be nonzero.
 boundary_term = zeros(N-1,1);
 
 % Evaluate each timestep

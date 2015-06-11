@@ -35,12 +35,13 @@ for p = 1:5
                         [-1,0,1], N-1, N-1);
     A = speye(N-1) + (tau/2)*Bh;
 
-    % Matrix V used on left hand side of formula
+    % Matrix V used on RHS of matrix formulas
     V = zeros(N+1,N+1);
 
     % Array for forcing term
     load_vector = zeros(N+1,N+1);
 
+    % Boundary values used on RHS of matrix formulas
     boundary_term = zeros(N-1,1);
 
     % Step through the scheme
@@ -68,17 +69,19 @@ for p = 1:5
         % Find the boundary values for the alternating direction.  Only the
         % values along the x boundary are needed by the formulas.
         for j = 1:N-1
-            U(1,j+1) = (1/2) * g2(0, h*j, tau*m) ...
+            U(1,j+1) = (1/2) * (g2(0, h*j, tau*m) + g2(0, h*j, tau*(m-1))) ...
                 - (tau/(4*h^2)) * (g2(0, h*(j-1), tau*m) - ...
                 2*g2(0, h*j, tau*m) + g2(0, h*(j+1), tau*m)) ...
-                + (1/2) * V(1,j+1);
-            U(N+1,j+1) = (1/2) * g2(h*N, h*j, tau*m) ...
-                - (tau/(4*h^2)) * (g2(h*N, h*(j-1), tau*m) - ...
-                2*g2(h*N, h*j, tau*m) + g2(h*N, h*(j+1), tau*m)) ...
-                + (1/2) * V(N+1,j+1);
+                + (tau/(4*h^2)) * (g2(0, h*(j-1), tau*(m-1)) - ...
+                2*g2(0, h*j, tau*(m-1)) + g2(0, h*(j+1), tau*(m-1)));
+            U(N+1,j+1) = (1/2) * (g2(1, h*j, tau*m) + g2(1, h*j, tau*(m-1))) ...
+                - (tau/(4*h^2)) * (g2(1, h*(j-1), tau*m) - ...
+                2*g2(1, h*j, tau*m) + g2(1, h*(j+1), tau*m)) ...
+                + (tau/(4*h^2)) * (g2(1, h*(j-1), tau*(m-1)) - ...
+                2*g2(1, h*j, tau*(m-1)) + g2(1, h*(j+1), tau*(m-1)));
         end
     
-        % Find the alternate matrix at the half timestep
+        % Find the approximte vlues at the half timestep
         % Need to solve system once for each j = 2,...,N
         for j = 1:N-1  
             boundary_term(1,1) = U(1,j+1);
@@ -135,6 +138,8 @@ for p = 1:5
     root_mean_sq_error = 0;
     nodal_error_squared = 0;    
     for i = 1:N+1
+    
+    root_mean_sq_error = sqrt(h^2 * nodal_error_squared);
        for j = 1:N+1
            current_error = abs(U(i,j) - u(h*(i-1), h*(j-1), tau*m));
            if current_error > max_nodal_error
@@ -143,8 +148,6 @@ for p = 1:5
            nodal_error_squared = nodal_error_squared + current_error^2;
        end
     end
-    
-    root_mean_sq_error = sqrt(h^2 * nodal_error_squared);
     
     % Write data to table
     table_data(p,1) = h;
@@ -156,7 +159,8 @@ for p = 1:5
     table_data(p,4) = h;
     table_data(p,5) = root_mean_sq_error;
     if p ~= 1
-       table_data(p,6) = log2(table_data(p-1,5) / table_data(p,5));
+       table_data(p,6) = log(table_data(p-1,5) / table_data(p,5)) / ...
+           log(table_data(p-1,4) / table_data(p,4));
     end
     
     %{
@@ -212,9 +216,9 @@ for p = 1:5
 end
 
 % Display table of error information
-disp('    h              max error                         order of conv');
+disp('    h                  max error          order of conv');
 disp(table_data(:,1:3));
-disp('    h              rms error                         order of conv');
+disp('    h                  rms error          order of conv');
 disp(table_data(:,4:6));
 end
 

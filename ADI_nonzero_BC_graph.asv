@@ -30,14 +30,14 @@ Bh = (1/h^2) * spdiags([-ones(N-1,1), 2*ones(N-1,1), -ones(N-1,1)], ...
                         [-1,0,1], N-1, N-1);
 A = speye(N-1) + (tau/2)*Bh;
 
-% Matrix V used on left hand side of formulas
+% Matrix V used on RHS of matrix formulas
 V = zeros(N+1,N+1);
 
 % Array of values for forcing term
 load_array = zeros(N+1,N+1);
 
-% Vector of boundary values used on RHS. Only the first and last entry
-% can be nonzero.
+% Vector of boundary values used on RHS of matrix formulas. Only the first 
+% and last entry can be nonzero.
 boundary_term = zeros(N-1,1);
 
 % Evaluate each timestep
@@ -56,7 +56,7 @@ for m = 1:M
     for i = 0:N
        for j = 1:N-1
           V(i+1,j+1) = U(i+1,j+1) + ...
-              (tau / (4*h^2)) * (U(i+1,j) - 2*U(i+1,j+1) + U(i+1,j+2));
+              (tau / (2*h^2)) * (U(i+1,j) - 2*U(i+1,j+1) + U(i+1,j+2));
        end
     end
     
@@ -67,11 +67,12 @@ for m = 1:M
            - (tau/(4*h^2)) * (g2(0, h*(j-1), tau*m) - ...
                 2*g2(0, h*j, tau*m) + g2(0, h*(j+1), tau*m)) ...
            + (tau/(4*h^2)) * (g2(0, h*(j-1), tau*(m-1)) - ...
-                2*g2(0, h*j, tau*(m-1) + g2(0, h*(j+1), tau*(m-1));
-       U(N+1,j+1) = (1/2) * g2(h*N, h*j, tau*m) ...
-           - (tau/(4*h^2)) * (g2(h*N, h*(j-1), tau*m) - ...
-                2*g2(h*N, h*j, tau*m) + g2(h*N, h*(j+1), tau*m)) ...
-           + (1/2) * V(N+1,j+1);
+                2*g2(0, h*j, tau*(m-1)) + g2(0, h*(j+1), tau*(m-1)));
+       U(N+1,j+1) = (1/2) * (g2(1, h*j, tau*m) + g2(1, h*j, tau*(m-1))) ...
+           - (tau/(4*h^2)) * (g2(1, h*(j-1), tau*m) - ...
+                2*g2(1, h*j, tau*m) + g2(1, h*(j+1), tau*m)) ...
+           + (tau/(4*h^2)) * (g2(1, h*(j-1), tau*(m-1)) - ...
+                2*g2(1, h*j, tau*(m-1)) + g2(1, h*(j+1), tau*(m-1)));
     end
     
     % Find the alternate matrix at the half timestep
