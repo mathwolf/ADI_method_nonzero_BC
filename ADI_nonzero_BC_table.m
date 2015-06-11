@@ -150,12 +150,13 @@ for p = 1:5
     table_data(p,1) = h;
     table_data(p,2) = max_nodal_error;
     if p ~= 1
-       table_data(p,3) = log(table_data(p-1,2) / table_data(p,2)); 
+       table_data(p,3) = log(table_data(p-1,2) / table_data(p,2)) / ...
+           log(table_data(p-1,1) / table_data(p,1)); 
     end   
     table_data(p,4) = h;
     table_data(p,5) = root_mean_sq_error;
     if p ~= 1
-       table_data(p,6) = log(table_data(p-1,5) / table_data(p,5));
+       table_data(p,6) = log2(table_data(p-1,5) / table_data(p,5));
     end
     
     %{
