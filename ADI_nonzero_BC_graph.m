@@ -28,12 +28,12 @@ for i = 0:N
 end
 
 % Create tridiagonal matrix used on left hand side of ADI method
-Bh = (1/h^2) * spdiags([-ones(N-1,1), 2*ones(N-1,1), -ones(N-1,1)], ...
+tridiagonal = spdiags([-ones(N-1,1), 2*ones(N-1,1), -ones(N-1,1)], ...
                         [-1,0,1], N-1, N-1);
-A = speye(N-1) + (tau/2)*Bh;
+A = speye(N-1) + (tau/(2*h^2)) * tridiagonal;
 
-% Matrix V used on RHS of matrix formulas
-V = zeros(N+1,N+1);
+% Matrix V used on RHS of matrix formulas, interior points only
+V = zeros(N-1,N-1);
 
 % Array of values for forcing term
 load_array = zeros(N+1,N+1);
@@ -46,18 +46,17 @@ boundary_term = zeros(N-1,1);
 for m = 1:M
     % Create an array for the forcing term at each 
     % gridpoint at one half of a timestep
-    for i = 0:N
-       for j = 0:N
-          load_array(i+1,j+1) = (1/2)*(f(h*i, h*j, tau*(m-1)) + ...
+    for i = 1:N-1
+       for j = 1:N-1
+          load_array(i,j) = (1/2)*(f(h*i, h*j, tau*(m-1)) + ...
               f(h*i, h*j, tau*m)); 
        end
     end
     
     % Create an array of values for V at each interior gridpoint
-    % and at gridpoints along the x-boundary
-    for i = 0:N
+    for i = 1:N-1
        for j = 1:N-1
-          V(i+1,j+1) = U(i+1,j+1) + ...
+          V(i,j) = U(i+1,j+1) + ...
               (tau / (2*h^2)) * (U(i+1,j) - 2*U(i+1,j+1) + U(i+1,j+2));
        end
     end
@@ -80,21 +79,39 @@ for m = 1:M
     % Find the alternate matrix at the half timestep
     % Need to solve system once for each j = 2,...,N
     for j = 1:N-1  
-        boundary_term(1,1) = U(1,j+1);
-        boundary_term(N-1,1) = U(N+1,j+1);
-        b = V(2:N,j+1) + ...
-            (tau/2) * load_array(2:N,j+1) + ...
-            (tau/(2*h^2)) * boundary_term(:,1);
+        % Find boundary values for first and last point
+        btf = (1/2) * (g2(0, h*j, tau*m) + g2(0, h*j, tau*(m-1))) ...
+           - (tau/(4*h^2)) * (g2(0, h*(j-1), tau*m) - ...
+                2*g2(0, h*j, tau*m) + g2(0, h*(j+1), tau*m)) ...
+           + (tau/(4*h^2)) * (g2(0, h*(j-1), tau*(m-1)) - ...
+                2*g2(0, h*j, tau*(m-1)) + g2(0, h*(j+1), tau*(m-1)));
+        btl = (1/2) * (g2(1, h*j, tau*m) + g2(1, h*j, tau*(m-1))) ...
+           - (tau/(4*h^2)) * (g2(1, h*(j-1), tau*m) - ...
+                2*g2(1, h*j, tau*m) + g2(1, h*(j+1), tau*m)) ...
+           + (tau/(4*h^2)) * (g2(1, h*(j-1), tau*(m-1)) - ...
+                2*g2(1, h*j, tau*(m-1)) + g2(1, h*(j+1), tau*(m-1)));
+        % Find rhs of vector equation
+        b = V(1:N-1,j) + ...
+            (tau/2) * load_array(1:N-1,j);
+        % Add effect of the boundary points
+        b(1) = b(1) + (tau/(2*h^2)) * btf;
+        b(N-1) = b(N-1) + (tau/(2*h^2)) * btl;
+        % Solve for approximate values at half timestep
         U(2:N,j+1) = A\b;
     end
     
     % Now find the interior points for next whole timestep
     % Solve system one for each i = 2, ... , N
     for i = 1:N-1        
-       boundary_term(1,1) = g2(h*i, 0, tau*m);
-       boundary_term(N-1,1) = g2(h*i, h*N, tau*m);
-       b = 2*U(i+1,2:N)' - V(i+1,2:N)' + ...
-           (tau/(2*h^2)) * boundary_term(:,1);
+       % Find boundary values for first and last point
+       btf = g2(h*i, 0, tau*m);
+       btl = g2(h*i, h*N, tau*m);
+       % Get the rhs of the vector equation
+       b = 2*U(i+1,2:N)' - V(i,1:N-1)';
+       % Add effect of the boundary points
+       b(1) = b(1) + (tau/(2*h^2)) * btf;
+       b(N-1) = b(N-1) + (tau/(2*h^2)) * btl;
+       % Solve vector equation for the next full timestep
        U(i+1,2:N) = (A\b)';       
     end
     
