@@ -40,11 +40,8 @@ for p = 1:5
     % Matrix V used on RHS of matrix formulas, interior points only
     V = zeros(N-1,N-1);
 
-    % Array for forcing term
+    % Array for forcing term, used at interior points only
     load_vector = zeros(N-1,N-1);
-
-    % Boundary values used on RHS of matrix formulas
-    boundary_term = zeros(N-1,1);
 
     % Step through the scheme
     for m = 1:M
@@ -66,19 +63,12 @@ for p = 1:5
         end
         
         % Find the approximte vlues at the half timestep
-        % Need to solve system once for each j = 2,...,N
+        % Need to solve system once for each j = 1,...,N-1
         for j = 1:N-1  
-            % Calculate the boundary values for the first and last points
-            btf = (1/2) * (g2(0, h*j, tau*m) + g2(0, h*j, tau*(m-1))) ...
-                - (tau/(4*h^2)) * (g2(0, h*(j-1), tau*m) - ...
-                2*g2(0, h*j, tau*m) + g2(0, h*(j+1), tau*m)) ...
-                + (tau/(4*h^2)) * (g2(0, h*(j-1), tau*(m-1)) - ...
-                2*g2(0, h*j, tau*(m-1)) + g2(0, h*(j+1), tau*(m-1)));
-            btl = (1/2) * (g2(1, h*j, tau*m) + g2(1, h*j, tau*(m-1))) ...
-                - (tau/(4*h^2)) * (g2(1, h*(j-1), tau*m) - ...
-                2*g2(1, h*j, tau*m) + g2(1, h*(j+1), tau*m)) ...
-                + (tau/(4*h^2)) * (g2(1, h*(j-1), tau*(m-1)) - ...
-                2*g2(1, h*j, tau*(m-1)) + g2(1, h*(j+1), tau*(m-1)));
+            % Calculate the boundary values for the first and last points,
+            % no perturbation terms
+            btf = (1/2) * (g2(0, h*j, tau*m) + g2(0, h*j, tau*(m-1)));
+            btl = (1/2) * (g2(1, h*j, tau*m) + g2(1, h*j, tau*(m-1)));
             % Find rhs of vector equation
             b = V(1:N-1,j) + (tau/2) * load_array(1:N-1,j);
             % Add effect of boundary values of rhs
