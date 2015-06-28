@@ -62,7 +62,7 @@ for p = 1:5
             end
         end
         
-        % Find the approximte vlues at the half timestep
+        % Find the approximte values at the half timestep
         % Need to solve system once for each j = 1,...,N-1
         for j = 1:N-1  
             % Calculate the boundary values for the first and last points,

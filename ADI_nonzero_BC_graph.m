@@ -58,7 +58,7 @@ for m = 1:M
     end
     
    
-    % Find the alternate matrix at the half timestep
+    % Find the approximation at the half timestep
     % Need to solve system once for each j = 2,...,N
     for j = 1:N-1  
         % Find boundary values for first and last point, no perturbation
