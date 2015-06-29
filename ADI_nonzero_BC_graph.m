@@ -75,7 +75,7 @@ for m = 1:M
     end
     
     % Now find the interior points for next whole timestep
-    % Solve system one for each i = 2, ... , N
+    % Solve system one for each i = 1, ... , N-1
     for i = 1:N-1        
        % Find boundary values for first and last point
        btf = g2(h*i, 0, tau*m);

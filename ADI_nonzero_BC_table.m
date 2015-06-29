@@ -16,7 +16,7 @@ table_data = zeros(5,6);
 for p = 1:5
     
     % Use a spatial grid of 0.1 times 2 to the power p-1
-    N = 10 * 2^(p-1);
+    N = 100 * 2^(p-1);
     h = 1./N;
     
     % Use a temporal spacing of the same size, go to 1 second
@@ -62,7 +62,7 @@ for p = 1:5
             end
         end
         
-        % Find the approximte values at the half timestep
+        % Find the approximate values at the half timestep
         % Need to solve system once for each j = 1,...,N-1
         for j = 1:N-1  
             % Calculate the boundary values for the first and last points,
@@ -79,7 +79,7 @@ for p = 1:5
         end
     
         % Now find the interior points for next whole timestep
-        % Solve system one for each i = 2, ... , N
+        % Solve system one for each i = 1, ... , N-1
         for i = 1:N-1 
             % Find boundary values for first and last points
             btf = g2(h*i, 0, tau*m);
