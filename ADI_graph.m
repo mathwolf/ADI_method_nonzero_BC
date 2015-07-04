@@ -30,26 +30,26 @@ end
 
 % Set up row structure for matrix equations
 n_rows = 0;
-for i = 1:N
+for j = 1:N
     % Go along row until we reach the end or find an interior point
-    j = 1;
-    while (j <= N) && (interior_pts(i,j).on == 0) % FALSE
-       j = j + 1; 
+    i = 1;
+    while (i <= N) && (interior_pts(i,j).on == 0) % FALSE
+       i = i + 1; 
     end
 
-    if j > N
+    if i > N
        % We are at the end of an empty row, go to the next row
        continue;
     end
     
     % We are at the first interior point in this row
     n_rows = n_rows + 1;
-    row(n_rows).i = i;
-    row(n_rows).startj = j;
-    while (j <= N) && (interior_pts(i,j).on == 1) % TRUE
-       j = j + 1; 
+    row(n_rows).j = j;
+    row(n_rows).starti = i;
+    while (i <= N) && (interior_pts(i,j).on == 1) % TRUE
+       i = i + 1; 
     end
-    row(n_rows).endj = j - 1;
+    row(n_rows).endi = i - 1;
     
     % Add boundary value terms to each nonempty row
     % Use 0 BC for now
@@ -59,26 +59,26 @@ end
 
 % Set up col structure for matrix equations
 n_cols = 0;
-for j = 1:N
+for i = 1:N
     % Go through col until we reach the end or find an interior point
-    i = 1;
-    while (i <= N) && (interior_pts(i,j).on == 0) % FALSE
-       i = i + 1; 
+    j = 1;
+    while (j <= N) && (interior_pts(i,j).on == 0) % FALSE
+       j = j + 1; 
     end
 
-    if i > N
+    if j > N
        % We are at the end of an empty col, go to the next col
        continue;
     end
     
     % We are at the first interior point in this col
     n_cols = n_cols + 1;
-    col(n_cols).j = j;
-    col(n_cols).starti = i;
-    while (i <= N) && (interior_pts(i,j).on == 1) % TRUE
-       i = i + 1; 
+    col(n_cols).i = i;
+    col(n_cols).startj = j;
+    while (j <= N) && (interior_pts(i,j).on == 1) % TRUE
+       j = j + 1; 
     end
-    col(n_cols).endi = i - 1;
+    col(n_cols).endj = j - 1;
     
     % Add boundary value terms to each nonempty col
     % Use 0 BC for now
@@ -98,13 +98,12 @@ for i = 1:N
 end
 %}
 
-for i=1:n_rows
-   disp(row(i)); 
+for j=1:n_rows
+   disp(row(j)); 
 end
 
-for j=1:n_cols
-   disp(col(j)); 
+for i=1:n_cols
+   disp(col(i)); 
 end
 
 end
-
