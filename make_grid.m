@@ -5,9 +5,8 @@ function make_grid()
 %   First example: the unit circle.  Say that the grid is defined for all
 %   points 0, +/-  0.1, +/- 0.2, ...
 
-% total number of rows, columns
-h = 0.02;
-N = 101;
+h = 0.1;   % grid spacing
+N = 21;    % total number of rows/cols in our grid
 
 grid = zeros(N,N);
 count_interior_points = 0;
@@ -40,8 +39,6 @@ for i = 1:N
         end
     end
 end
-disp(X);
-disp(Y);
 scatter(X,Y);
 
 end

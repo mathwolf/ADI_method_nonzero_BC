@@ -1,0 +1,26 @@
+function [n_pts, stencil] = make_stencil(h, N, x_min, y_min)
+%   Create a square grid of points mapping the interior of the domain
+%   of the problem.  Each point contains 0 or 1.
+%   h: grid spacing
+%   N: total number of rows and cols in the grid
+%   x_min: starting value for x
+%   y_min: ... for y
+
+%   First example: the unit circle.  Say that the grid is defined for all
+%   points 0, +/-  0.1, +/- 0.2, ...
+
+stencil = zeros(N,N);
+n_pts = 0;
+
+for i = 1:N
+    for j = 1:N
+        x = x_min + h * (i-1);
+        y = y_min + h * (j-1);
+        if x^2 + y^2 < 1
+           stencil(i,j) = 1; 
+           n_pts = n_pts + 1;
+        end
+    end
+end
+
+end
