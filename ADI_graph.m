@@ -2,12 +2,12 @@ function ADI_graph()
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 
-N= 9;
-h = 0.25;
+N= 17;
+h = 0.125;
 x_min = -1.;
 y_min = -1.;
 
-[n_pts, stencil] = make_stencil(h, N, x_min, y_min);
+stencil = make_stencil(h, N, x_min, y_min);
 
 
 % Set up matrix of gridpoints to represent domain of problem
@@ -20,8 +20,6 @@ for i = 1:N
        else
            % Interior point
            interior_pts(i,j).on = 1; % TRUE
-           interior_pts(i,j).i = i;  % rewrite to correct grid val
-           interior_pts(i,j).j = j;
            interior_pts(i,j).x = x_min + h * (i-1);
            interior_pts(i,j).y = y_min + h * (j-1);
            interior_pts(i,j).U = 0.;
@@ -90,6 +88,7 @@ end
 
 disp(n_rows);
 disp(n_cols);
+%{
 for i = 1:N
     for j = 1:N
         if interior_pts(i,j).on == 1
@@ -97,6 +96,7 @@ for i = 1:N
         end
     end
 end
+%}
 
 for i=1:n_rows
    disp(row(i)); 
@@ -105,5 +105,6 @@ end
 for j=1:n_cols
    disp(col(j)); 
 end
+
 end
 

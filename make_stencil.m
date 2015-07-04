@@ -1,4 +1,4 @@
-function [n_pts, stencil] = make_stencil(h, N, x_min, y_min)
+function stencil = make_stencil(h, N, x_min, y_min)
 %   Create a square grid of points mapping the interior of the domain
 %   of the problem.  Each point contains 0 or 1.
 %   h: grid spacing
@@ -16,7 +16,8 @@ for i = 1:N
     for j = 1:N
         x = x_min + h * (i-1);
         y = y_min + h * (j-1);
-        if x^2 + y^2 < 1
+        if (phi1(x) < y) && (y < phi2(x)) && ...
+                (psi1(y) < x) && (x < psi2(y));
            stencil(i,j) = 1; 
            n_pts = n_pts + 1;
         end
