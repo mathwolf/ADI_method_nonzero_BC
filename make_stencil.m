@@ -26,7 +26,7 @@ end
 % Create plot of points
 disp(n_pts);
 
-% vector containing x-coordin
+% vector containing x-coordinate
 X = zeros(n_pts, 1);
 Y = zeros(n_pts, 1);
 current_point = 1;
