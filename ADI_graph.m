@@ -2,8 +2,8 @@ function ADI_graph()
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 
-N= 5;
-h = 0.5;
+N= 9;
+h = 0.25;
 x_min = -1.;
 y_min = -1.;
 

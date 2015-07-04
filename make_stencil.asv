@@ -23,22 +23,6 @@ for i = 1:N
     end
 end
 
-% Create plot of points
-disp(n_pts);
 
-% vector containing x-coordin
-X = zeros(n_pts, 1);
-Y = zeros(n_pts, 1);
-current_point = 1;
-for i = 1:N
-    for j = 1:N
-        if stencil(i,j) == 1
-           X(current_point) = -1. + h * (i-1);
-           Y(current_point) = -1. + h * (j-1);
-           current_point = current_point + 1;
-        end
-    end
-end
-scatter(X,Y);
 
 end
