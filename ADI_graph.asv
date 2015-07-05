@@ -137,9 +137,9 @@ end
 %}
 
 % Save initial state for plotting
-plot_data = zeros(N,N,6);
-for i = 1:n
-    for j = 1:n
+plot_data = zeros(N,N,9);
+for i = 1:N
+    for j = 1:N
         if interior_pts(i,j).on == 1
             plot_data(i,j,1) = interior_pts(i,j).U; 
             plot_data(i,j,2) = u(interior_pts(i,j).x, ...
@@ -162,17 +162,17 @@ for m = 1:2
        % First, consider special case where the column holds only 1
        % interior point
        if j == col(c).endj
-           interior_pts(i,j).V = ... % formula using (5)
-                interior_pts(i,j).U + (tau / (2*h)) * ...
-                ( (col(c).btl.U - interior_pts(i,j).U) / ...
+           interior_pts(i,j).V = interior_pts(i,j).U + ...
+               (tau / (col(c).btf.h_prime + col(c).btl.h_prime) ) * ...
+               ( (col(c).btl.U - interior_pts(i,j).U) / ...
                     col(c).btl.h_prime ...
                     - (interior_pts(i,j).U - col(c).btf.U) / ...
                     col(c).btf.h_prime );
            
-       % Otherwise the row holds two or more interior points
+       % Otherwise the col holds two or more interior points
        else
-            interior_pts(i,j).V = ... % formula for first point, using (5)
-                interior_pts(i,j).U + (tau / (2*h)) * ...
+            interior_pts(i,j).V = interior_pts(i,j).U + ...
+                (tau / (col(c).btf.h_prime + h) ) * ...
                 ( (interior_pts(i,j+1).U - interior_pts(i,j).U) / h ...
                     - (interior_pts(i,j).U - col(c).btf.U) / ...
                     col(c).btf.h_prime );
@@ -184,46 +184,69 @@ for m = 1:2
                         + interior_pts(i,j-1).U);
                 j = j + 1;
             end
-            interior_pts(i,j).V = ... % formula for last point, using (5)
-                interior_pts(i,j).U + (tau / (2*h)) * ...
+            interior_pts(i,j).V = interior_pts(i,j).U + ...
+                (tau / (h + col(c).btl.h_prime) ) * ...
                 ( (col(c).btl.U - interior_pts(i,j).U) / ...
                     col(c).btl.h_prime ...
                 - (interior_pts(i,j).U - interior_pts(i,j-1).U) / h );                
        end
     end
     
+    if m == 1
+       for i = 1:N
+          for j = 1:N
+              if interior_pts(i,j).on == 1
+                 plot_data(i,j,3) = interior_pts(i,j).V; 
+              end
+          end
+       end
+    end
+
+    
     % Find the approximation at the half-timestep
     % Here we solve a matrix-vector equation once for each row
     for r = 1:n_rows
        j = row(r).j;
-       % Get length of the current row 
-       length = row(r).endi - row(r).starti + 1;
+       starti = row(r).starti;
+       endi = row(r).endi;
+       length = endi - starti + 1;
        
        % Create vectors for rhs of equation
        V = zeros(length,1);
        load_vector = zeros(length,1);
-       for i = row(r).starti:row(r).endi
-          V(i - row(r).starti + 1) = interior_pts(i,j).V; 
-          load_vector(i - row(r).starti + 1) = ...
-              f(interior_pts(i,j).x, interior_pts(i,j).y, tau*(m-(1/2)));
+       for i = starti:endi
+          V(i - starti + 1) = interior_pts(i,j).V; 
+          load_vector(i - starti + 1) = ...
+              f(interior_pts(i,j).x, interior_pts(i,j).y, tau*(m-0.5));
        end
               
        % rhs of vector equation
        b = V + (tau/2) * load_vector;  
        
        % Update the boundary values for the current row
-       row(r).btf.U = g2(row(r).btf.x, row(r).btf.y, tau*(m-(1/2)));
-       row(r).btl.U = g2(row(r).btl.x, row(r).btl.y, tau*(m-(1/2)));
+       row(r).btf.U = g2(row(r).btf.x, row(r).btf.y, tau*(m-0.5));
+       row(r).btl.U = g2(row(r).btl.x, row(r).btl.y, tau*(m-0.5));
+       btf.U = row(r).btf.U;
+       btf.h_prime = row(r).btf.h_prime;
+       btl.U = row(r).btl.U;
+       btl.h_prime = row(r).btl.h_prime;       
        
        % Add effect of boundary pts to rhs of equation
-       b(1) = b(1) + (tau/(2*h*row(r).btf.h_prime)) * row(r).btf.U;
-       b(length) = b(length) + (tau/(2*h*row(r).btl.h_prime)) * ...
-           row(r).btl.U;
+       b(1) = b(1) + (tau/((h + btf.h_prime) * btf.h_prime) ) * btf.U;
+       b(length) = b(length) + ...
+           (tau/((h + btl.h_prime) * btl.h_prime) ) * btl.U;
        
        % Set up tridiagonal matrix on lhs of equation
        A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
                         [-1,0,1], length, length);
-       A = speye(length) + (tau/(2*h^2)) * A ;
+       A = (tau/(2*h^2)) * A;
+       % Adjust first and last row since boundary points are unevenly
+       % spaced
+       A(1,1) = tau / (h * btf.h_prime);
+       A(1,2) = - tau / (h * (h + btf.h_prime));
+       A(length, length - 1) = - tau / (h * (h + btl.h_prime));
+       A(length, length) = tau / (h * btl.h_prime);
+       A = speye(length) + A ;
        
        % Solve the vector equation
        x = A\b;
@@ -234,19 +257,36 @@ for m = 1:2
        end                   
     end
     
+    % Store data for plotting on selected steps
+    
+    if m == 1
+       for i = 1:N
+          for j = 1:N
+              if interior_pts(i,j).on == 1
+                 plot_data(i,j,4) = interior_pts(i,j).U; 
+                 plot_data(i,j,5) = u(interior_pts(i,j).x, ...
+                     interior_pts(i,j).y, tau*(m-0.5));
+                 plot_data(i,j,6) = plot_data(i,j,4) - plot_data(i,j,5);
+              end
+          end
+       end
+    end
+
+    
     % Find interior points for the next whole timestep
     % Here we solve a matrix/vector equation once for each column
     for c = 1:n_cols
         i = col(c).i;
-        % Get length of the current column
+        startj = col(c).startj;
+        endj = col(c).endj;
         length = col(c).endj - col(c).startj + 1;
         
         % Create vectors for rhs of equation
         U = zeros(length,1);
         V = zeros(length,1);
-        for j = col(c).startj:col(c).endj
-            U(j - col(c).startj + 1) = interior_pts(i,j).U;
-            V(j - col(c).startj + 1) = interior_pts(i,j).V;
+        for j = startj:endj
+            U(j - startj + 1) = interior_pts(i,j).U;
+            V(j - startj + 1) = interior_pts(i,j).V;
         end
         
         % rhs of vector equation
@@ -255,16 +295,28 @@ for m = 1:2
        % Update the boundary values for the current column
        col(c).btf.U = g2(col(c).btf.x, col(c).btf.y, tau*m);
        col(c).btl.U = g2(col(c).btl.x, col(c).btl.y, tau*m);
+       btf.U = col(c).btf.U;
+       btf.h_prime = col(c).btf.h_prime;
+       btl.U = col(c).btl.U;
+       btl.h_prime = col(c).btl.h_prime;
        
        % Add effect of boundary pts to rhs of equation
-       b(1) = b(1) + (tau/(2*h*col(c).btf.h_prime)) * col(c).btf.U;
-       b(length) = b(length) + (tau/(2*h*col(c).btl.h_prime)) * ...
-           col(c).btl.U;
+       b(1) = b(1) + (tau/((h + btf.h_prime) * btf.h_prime) ) * btf.U;
+       b(length) = b(length) + ...
+           (tau/((h + btl.h_prime) * btl.h_prime) ) * btl.U;
        
        % Set up tridiagonal matrix on lhs of equation
        A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
                         [-1,0,1], length, length);
-       A = speye(length) + (tau/(2*h^2)) * A ;
+       A = (tau/(2*h^2)) * A;
+       % Adjust first and last row since boundary points are unevenly
+       % spaced
+       A(1,1) = tau / (h * btf.h_prime);
+       A(1,2) = - tau / (h * (h + btf.h_prime));
+       A(length, length - 1) = - tau / (h * (h + btl.h_prime));
+       A(length, length) = tau / (h * btl.h_prime);
+       
+       A = speye(length) + A ;
        
        % Solve the vector equation
        x = A\b;
@@ -281,10 +333,10 @@ for m = 1:2
        for i = 1:N
           for j = 1:N
               if interior_pts(i,j).on == 1
-                 plot_data(i,j,4) = interior_pts(i,j).U; 
-                 plot_data(i,j,5) = u(interior_pts(i,j).x, ...
+                 plot_data(i,j,7) = interior_pts(i,j).U; 
+                 plot_data(i,j,8) = u(interior_pts(i,j).x, ...
                      interior_pts(i,j).y, tau*m);
-                 plot_data(i,j,6) = plot_data(i,j,1) - plot_data(i,j,2);
+                 plot_data(i,j,9) = plot_data(i,j,7) - plot_data(i,j,8);
               end
           end
        end
@@ -297,47 +349,67 @@ X = linspace(-1., 1., N);
 Y = linspace(-1., 1., N);
 
 figure
-subplot(2,3,1)
+subplot(3,3,1)
 waterfall(X,Y,plot_data(:,:,1))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Approximate solution at initial condition')
+
+subplot(3,3,2)
+waterfall(X,Y,plot_data(:,:,2))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Exact solution at initial condition')
+
+subplot(3,3,3)
+waterfall(X,Y,plot_data(:,:,3));
+colormap winter;
+xlabel('x')
+ylabel('y')
+title('V at initial condition')
+
+subplot(3,3,4)
+waterfall(X,Y,plot_data(:,:,4))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Approximate solution after one-half timestep')
+
+subplot(3,3,5)
+waterfall(X,Y,plot_data(:,:,5))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Exact solution after one-half timestep')
+
+subplot(3,3,6)
+waterfall(X,Y,plot_data(:,:,6));
+colormap winter;
+xlabel('x')
+ylabel('y')
+title('Error after one-half timestep')
+
+subplot(3,3,7)
+waterfall(X,Y,plot_data(:,:,7))
 colormap winter
 xlabel('x')
 ylabel('y')
 title('Approximate solution after one timestep')
 
-subplot(2,3,5)
-waterfall(X,Y,plot_data(:,:,2))
+subplot(3,3,8)
+waterfall(X,Y,plot_data(:,:,8))
 colormap winter
 xlabel('x')
 ylabel('y')
 title('Exact solution after one timestep')
 
-subplot(2,3,6)
-waterfall(X,Y,plot_data(:,:,3));
+subplot(3,3,9)
+waterfall(X,Y,plot_data(:,:,9));
 colormap winter;
 xlabel('x')
 ylabel('y')
 title('Error after one timestep')
-
-subplot(2,3,4)
-waterfall(X,Y,plot_data(:,:,1))
-colormap winter
-xlabel('x')
-ylabel('y')
-title('Approximate solution after one timestep')
-
-subplot(2,3,5)
-waterfall(X,Y,plot_data(:,:,2))
-colormap winter
-xlabel('x')
-ylabel('y')
-title('Exact solution after one timestep')
-
-subplot(2,3,6)
-waterfall(X,Y,plot_data(:,:,3));
-colormap winter;
-xlabel('x')
-ylabel('y')
-title('Error after one timestep')
-
 
 end

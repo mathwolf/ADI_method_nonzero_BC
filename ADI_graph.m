@@ -2,8 +2,8 @@ function ADI_graph()
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 
-N= 11;
-h = 0.2;
+N= 41;
+h = 0.05;
 x_min = -1.;
 y_min = -1.;
 
@@ -162,17 +162,17 @@ for m = 1:2
        % First, consider special case where the column holds only 1
        % interior point
        if j == col(c).endj
-           interior_pts(i,j).V = ... % formula using (5)
-                interior_pts(i,j).U + (tau / (2*h)) * ...
-                ( (col(c).btl.U - interior_pts(i,j).U) / ...
+           interior_pts(i,j).V = interior_pts(i,j).U + ...
+               (tau / (col(c).btf.h_prime + col(c).btl.h_prime) ) * ...
+               ( (col(c).btl.U - interior_pts(i,j).U) / ...
                     col(c).btl.h_prime ...
                     - (interior_pts(i,j).U - col(c).btf.U) / ...
                     col(c).btf.h_prime );
            
-       % Otherwise the row holds two or more interior points
+       % Otherwise the col holds two or more interior points
        else
-            interior_pts(i,j).V = ... % formula for first point, using (5)
-                interior_pts(i,j).U + (tau / (2*h)) * ...
+            interior_pts(i,j).V = interior_pts(i,j).U + ...
+                (tau / (col(c).btf.h_prime + h) ) * ...
                 ( (interior_pts(i,j+1).U - interior_pts(i,j).U) / h ...
                     - (interior_pts(i,j).U - col(c).btf.U) / ...
                     col(c).btf.h_prime );
@@ -184,28 +184,40 @@ for m = 1:2
                         + interior_pts(i,j-1).U);
                 j = j + 1;
             end
-            interior_pts(i,j).V = ... % formula for last point, using (5)
-                interior_pts(i,j).U + (tau / (2*h)) * ...
+            interior_pts(i,j).V = interior_pts(i,j).U + ...
+                (tau / (h + col(c).btl.h_prime) ) * ...
                 ( (col(c).btl.U - interior_pts(i,j).U) / ...
                     col(c).btl.h_prime ...
                 - (interior_pts(i,j).U - interior_pts(i,j-1).U) / h );                
        end
     end
     
+    if m == 1
+       for i = 1:N
+          for j = 1:N
+              if interior_pts(i,j).on == 1
+                 plot_data(i,j,3) = interior_pts(i,j).V; 
+              end
+          end
+       end
+    end
+
+    
     % Find the approximation at the half-timestep
     % Here we solve a matrix-vector equation once for each row
     for r = 1:n_rows
        j = row(r).j;
-       % Get length of the current row 
-       length = row(r).endi - row(r).starti + 1;
+       starti = row(r).starti;
+       endi = row(r).endi;
+       length = endi - starti + 1;
        
        % Create vectors for rhs of equation
        V = zeros(length,1);
        load_vector = zeros(length,1);
-       for i = row(r).starti:row(r).endi
-          V(i - row(r).starti + 1) = interior_pts(i,j).V; 
-          load_vector(i - row(r).starti + 1) = ...
-              f(interior_pts(i,j).x, interior_pts(i,j).y, tau*(m-(1/2)));
+       for i = starti:endi
+          V(i - starti + 1) = interior_pts(i,j).V; 
+          load_vector(i - starti + 1) = ...
+              f(interior_pts(i,j).x, interior_pts(i,j).y, tau*(m-0.5));
        end
               
        % rhs of vector equation
@@ -214,23 +226,34 @@ for m = 1:2
        % Update the boundary values for the current row
        row(r).btf.U = g2(row(r).btf.x, row(r).btf.y, tau*(m-0.5));
        row(r).btl.U = g2(row(r).btl.x, row(r).btl.y, tau*(m-0.5));
+       btf.U = row(r).btf.U;
+       btf.h_prime = row(r).btf.h_prime;
+       btl.U = row(r).btl.U;
+       btl.h_prime = row(r).btl.h_prime;       
        
        % Add effect of boundary pts to rhs of equation
-       b(1) = b(1) + (tau/(2*h*row(r).btf.h_prime)) * row(r).btf.U;
-       b(length) = b(length) + (tau/(2*h*row(r).btl.h_prime)) * ...
-           row(r).btl.U;
+       b(1) = b(1) + (tau/((h + btf.h_prime) * btf.h_prime) ) * btf.U;
+       b(length) = b(length) + ...
+           (tau/((h + btl.h_prime) * btl.h_prime) ) * btl.U;
        
        % Set up tridiagonal matrix on lhs of equation
        A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
                         [-1,0,1], length, length);
-       A = speye(length) + (tau/(2*h^2)) * A ;
+       A = (tau/(2*h^2)) * A;
+       % Adjust first and last row since boundary points are unevenly
+       % spaced
+       A(1,1) = tau / (h * btf.h_prime);
+       A(1,2) = - tau / (h * (h + btf.h_prime));
+       A(length, length - 1) = - tau / (h * (h + btl.h_prime));
+       A(length, length) = tau / (h * btl.h_prime);
+       A = speye(length) + A ;
        
        % Solve the vector equation
        x = A\b;
        
        % Update the approximate solution for the current row
-       for i = row(r).starti:row(r).endi
-           interior_pts(i,j).U = x(i - row(r).starti + 1);
+       for i = starti:endi
+           interior_pts(i,j).U = x(i - starti + 1);
        end                   
     end
     
@@ -243,7 +266,8 @@ for m = 1:2
                  plot_data(i,j,4) = interior_pts(i,j).U; 
                  plot_data(i,j,5) = u(interior_pts(i,j).x, ...
                      interior_pts(i,j).y, tau*(m-0.5));
-                 plot_data(i,j,6) = plot_data(i,j,4) - plot_data(i,j,5);
+                 plot_data(i,j,6) = ...
+                     abs(plot_data(i,j,4) - plot_data(i,j,5));
               end
           end
        end
@@ -254,15 +278,16 @@ for m = 1:2
     % Here we solve a matrix/vector equation once for each column
     for c = 1:n_cols
         i = col(c).i;
-        % Get length of the current column
+        startj = col(c).startj;
+        endj = col(c).endj;
         length = col(c).endj - col(c).startj + 1;
         
         % Create vectors for rhs of equation
         U = zeros(length,1);
         V = zeros(length,1);
-        for j = col(c).startj:col(c).endj
-            U(j - col(c).startj + 1) = interior_pts(i,j).U;
-            V(j - col(c).startj + 1) = interior_pts(i,j).V;
+        for j = startj:endj
+            U(j - startj + 1) = interior_pts(i,j).U;
+            V(j - startj + 1) = interior_pts(i,j).V;
         end
         
         % rhs of vector equation
@@ -271,23 +296,34 @@ for m = 1:2
        % Update the boundary values for the current column
        col(c).btf.U = g2(col(c).btf.x, col(c).btf.y, tau*m);
        col(c).btl.U = g2(col(c).btl.x, col(c).btl.y, tau*m);
+       btf.U = col(c).btf.U;
+       btf.h_prime = col(c).btf.h_prime;
+       btl.U = col(c).btl.U;
+       btl.h_prime = col(c).btl.h_prime;
        
        % Add effect of boundary pts to rhs of equation
-       b(1) = b(1) + (tau/(2*h*col(c).btf.h_prime)) * col(c).btf.U;
-       b(length) = b(length) + (tau/(2*h*col(c).btl.h_prime)) * ...
-           col(c).btl.U;
+       b(1) = b(1) + (tau/((h + btf.h_prime) * btf.h_prime) ) * btf.U;
+       b(length) = b(length) + ...
+           (tau/((h + btl.h_prime) * btl.h_prime) ) * btl.U;
        
        % Set up tridiagonal matrix on lhs of equation
        A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
                         [-1,0,1], length, length);
-       A = speye(length) + (tau/(2*h^2)) * A ;
+       A = (tau/(2*h^2)) * A;
+       % Adjust first and last row since boundary points are unevenly
+       % spaced
+       A(1,1) = tau / (h * btf.h_prime);
+       A(1,2) = - tau / (h * (h + btf.h_prime));
+       A(length, length - 1) = - tau / (h * (h + btl.h_prime));
+       A(length, length) = tau / (h * btl.h_prime);       
+       A = speye(length) + A ;
        
        % Solve the vector equation
        x = A\b;
 
        % Update the approximate solution for the current row
-       for j = col(c).startj:col(c).endj
-           interior_pts(i,j).U = x(j - col(c).startj + 1);
+       for j = startj:endj
+           interior_pts(i,j).U = x(j - startj + 1);
        end
     end
     
@@ -300,7 +336,8 @@ for m = 1:2
                  plot_data(i,j,7) = interior_pts(i,j).U; 
                  plot_data(i,j,8) = u(interior_pts(i,j).x, ...
                      interior_pts(i,j).y, tau*m);
-                 plot_data(i,j,9) = plot_data(i,j,7) - plot_data(i,j,8);
+                 plot_data(i,j,9) = ...
+                     abs(plot_data(i,j,7) - plot_data(i,j,8));
               end
           end
        end
@@ -332,7 +369,7 @@ waterfall(X,Y,plot_data(:,:,3));
 colormap winter;
 xlabel('x')
 ylabel('y')
-title('Error at initial condition')
+title('V at initial condition')
 
 subplot(3,3,4)
 waterfall(X,Y,plot_data(:,:,4))
