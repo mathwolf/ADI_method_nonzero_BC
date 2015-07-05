@@ -2,8 +2,8 @@ function ADI_graph()
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 
-N= 41;
-h = 0.05;
+N= 201;
+h = 0.01;
 x_min = -1.;
 y_min = -1.;
 
@@ -136,8 +136,10 @@ for i=1:n_cols
 end
 %}
 
+plot_data = zeros(N,N,6);
 % Save initial state for plotting
-plot_data = zeros(N,N,9);
+%{
+
 for i = 1:N
     for j = 1:N
         if interior_pts(i,j).on == 1
@@ -148,11 +150,11 @@ for i = 1:N
         end
     end
 end
-
+%}
 
 % Now that the spatial domain has been established, 
 % evaluate each timestep 
-for m = 1:2
+for m = 1:M
     
     % Calculate the value of the function V at every interior gridpoint
     for c = 1:n_cols
@@ -191,7 +193,9 @@ for m = 1:2
                 - (interior_pts(i,j).U - interior_pts(i,j-1).U) / h );                
        end
     end
-    
+  
+    %{
+    % Plot V for debuggging
     if m == 1
        for i = 1:N
           for j = 1:N
@@ -201,7 +205,7 @@ for m = 1:2
           end
        end
     end
-
+    %}
     
     % Find the approximation at the half-timestep
     % Here we solve a matrix-vector equation once for each row
@@ -257,6 +261,7 @@ for m = 1:2
        end                   
     end
     
+    %{
     % Store data for plotting on selected steps
     
     if m == 1
@@ -272,7 +277,7 @@ for m = 1:2
           end
        end
     end
-
+    %}
     
     % Find interior points for the next whole timestep
     % Here we solve a matrix/vector equation once for each column
@@ -333,14 +338,27 @@ for m = 1:2
        for i = 1:N
           for j = 1:N
               if interior_pts(i,j).on == 1
-                 plot_data(i,j,7) = interior_pts(i,j).U; 
-                 plot_data(i,j,8) = u(interior_pts(i,j).x, ...
+                 plot_data(i,j,1) = interior_pts(i,j).U; 
+                 plot_data(i,j,2) = u(interior_pts(i,j).x, ...
                      interior_pts(i,j).y, tau*m);
-                 plot_data(i,j,9) = ...
-                     abs(plot_data(i,j,7) - plot_data(i,j,8));
+                 plot_data(i,j,3) = ...
+                     abs(plot_data(i,j,1) - plot_data(i,j,2));
               end
           end
        end
+    elseif m == M
+        for i = 1:N
+          for j = 1:N
+              if interior_pts(i,j).on == 1
+                 plot_data(i,j,4) = interior_pts(i,j).U; 
+                 plot_data(i,j,5) = u(interior_pts(i,j).x, ...
+                     interior_pts(i,j).y, tau*m);
+                 plot_data(i,j,6) = ...
+                     abs(plot_data(i,j,4) - plot_data(i,j,5));
+              end
+          end
+       end
+
     end
     
 end
@@ -349,6 +367,8 @@ end
 X = linspace(-1., 1., N);
 Y = linspace(-1., 1., N);
 
+%{ 
+%Extra plots for debuging
 figure
 subplot(3,3,1)
 waterfall(X,Y,plot_data(:,:,1))
@@ -370,47 +390,47 @@ colormap winter;
 xlabel('x')
 ylabel('y')
 title('V at initial condition')
-
-subplot(3,3,4)
-waterfall(X,Y,plot_data(:,:,4))
-colormap winter
-xlabel('x')
-ylabel('y')
-title('Approximate solution after one-half timestep')
-
-subplot(3,3,5)
-waterfall(X,Y,plot_data(:,:,5))
-colormap winter
-xlabel('x')
-ylabel('y')
-title('Exact solution after one-half timestep')
-
-subplot(3,3,6)
-waterfall(X,Y,plot_data(:,:,6));
-colormap winter;
-xlabel('x')
-ylabel('y')
-title('Error after one-half timestep')
-
-subplot(3,3,7)
-waterfall(X,Y,plot_data(:,:,7))
+%}
+subplot(2,3,1)
+waterfall(X,Y,plot_data(:,:,1))
 colormap winter
 xlabel('x')
 ylabel('y')
 title('Approximate solution after one timestep')
 
-subplot(3,3,8)
-waterfall(X,Y,plot_data(:,:,8))
+subplot(2,3,2)
+waterfall(X,Y,plot_data(:,:,2))
 colormap winter
 xlabel('x')
 ylabel('y')
 title('Exact solution after one timestep')
 
-subplot(3,3,9)
-waterfall(X,Y,plot_data(:,:,9));
+subplot(2,3,3)
+waterfall(X,Y,plot_data(:,:,3));
 colormap winter;
 xlabel('x')
 ylabel('y')
 title('Error after one timestep')
+
+subplot(2,3,4)
+waterfall(X,Y,plot_data(:,:,4))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Approximate solution after final timestep')
+
+subplot(2,3,5)
+waterfall(X,Y,plot_data(:,:,5))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Exact solution after final timestep')
+
+subplot(2,3,6)
+waterfall(X,Y,plot_data(:,:,6));
+colormap winter;
+xlabel('x')
+ylabel('y')
+title('Error after final timestep')
 
 end
