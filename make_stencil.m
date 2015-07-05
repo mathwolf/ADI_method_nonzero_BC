@@ -10,7 +10,7 @@ function stencil = make_stencil(h, N, x_min, y_min)
 %   points 0, +/-  0.1, +/- 0.2, ...
 
 stencil = zeros(N,N);
-n_pts = 0;
+% n_pts = 0;
 
 for i = 1:N
     for j = 1:N
@@ -19,11 +19,12 @@ for i = 1:N
         if (phi1(x) < y) && (y < phi2(x)) && ...
                 (psi1(y) < x) && (x < psi2(y));
            stencil(i,j) = 1; 
-           n_pts = n_pts + 1;
+           % n_pts = n_pts + 1;
         end
     end
 end
 
+%{
 % Create plot of points
 disp(n_pts);
 
@@ -41,5 +42,5 @@ for i = 1:N
     end
 end
 scatter(X,Y);
-
+%}
 end

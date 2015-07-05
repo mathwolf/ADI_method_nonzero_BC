@@ -3,7 +3,7 @@ function ADI_graph()
 %   Detailed explanation goes here
 
 N= 201;
-h = 0.1;
+h = 0.01;
 x_min = -1.;
 y_min = -1.;
 
@@ -264,11 +264,14 @@ for m = 1:2
     % Store data for plotting on selected steps
     
     if m == 1
-       Z = sparse(N,N);
+       plot_data = zeros(N,N,3);
        for i = 1:N
           for j = 1:N
               if interior_pts(i,j).on == 1
-                 Z(i,j) = interior_pts(i,j).U; 
+                 plot_data(i,j,1) = interior_pts(i,j).U; 
+                 plot_data(i,j,2) = u(interior_pts(i,j).x, ...
+                     interior_pts(i,j).y, tau*m);
+                 plot_data(i,j,3) = plot_data(i,j,1) - plot_data(i,j,2);
               end
           end
        end
@@ -281,12 +284,26 @@ X = linspace(-1., 1., N);
 Y = linspace(-1., 1., N);
 
 figure
-surf(X,Y,Z)
+subplot(1,3,1)
+waterfall(X,Y,plot_data(:,:,1))
 colormap winter
 xlabel('x')
 ylabel('y')
 title('Approximate solution after one timestep')
 
+subplot(1,3,2)
+waterfall(X,Y,plot_data(:,:,2))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Exact solution after one timestep')
+
+subplot(1,3,3)
+waterfall(X,Y,plot_data(:,:,3));
+colormap winter;
+xlabel('x')
+ylabel('y')
+title('Error after one timestep')
 
 
 end
