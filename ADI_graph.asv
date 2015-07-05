@@ -2,8 +2,8 @@ function ADI_graph()
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 
-N= 201;
-h = 0.1;
+N= 11;
+h = 0.2;
 x_min = -1.;
 y_min = -1.;
 
@@ -136,6 +136,20 @@ for i=1:n_cols
 end
 %}
 
+% Save initial state for plotting
+plot_data = zeros(N,N,6);
+for i = 1:n
+    for j = 1:n
+        if interior_pts(i,j).on == 1
+            plot_data(i,j,1) = interior_pts(i,j).U; 
+            plot_data(i,j,2) = u(interior_pts(i,j).x, ...
+                interior_pts(i,j).y, 0);
+            plot_data(i,j,3) = plot_data(i,j,1) - plot_data(i,j,2);
+        end
+    end
+end
+
+
 % Now that the spatial domain has been established, 
 % evaluate each timestep 
 for m = 1:2
@@ -188,9 +202,9 @@ for m = 1:2
        % Create vectors for rhs of equation
        V = zeros(length,1);
        load_vector = zeros(length,1);
-       for i = starti:endi
-          V(i - starti + 1) = interior_pts(i,j).V; 
-          load_vector(i - starti + 1) = ...
+       for i = row(r).starti:row(r).endi
+          V(i - row(r).starti + 1) = interior_pts(i,j).V; 
+          load_vector(i - row(r).starti + 1) = ...
               f(interior_pts(i,j).x, interior_pts(i,j).y, tau*(m-(1/2)));
        end
               
@@ -215,8 +229,8 @@ for m = 1:2
        x = A\b;
        
        % Update the approximate solution for the current row
-       for i = starti:endi
-           interior_pts(i,j).U = x(i - starti + 1);
+       for i = row(r).starti:row(r).endi
+           interior_pts(i,j).U = x(i - row(r).starti + 1);
        end                   
     end
     
@@ -230,9 +244,9 @@ for m = 1:2
         % Create vectors for rhs of equation
         U = zeros(length,1);
         V = zeros(length,1);
-        for j = startj:endj
-            U(j - startj + 1) = interior_pts(i,j).U;
-            V(j - startj + 1) = interior_pts(i,j).V;
+        for j = col(c).startj:col(c).endj
+            U(j - col(c).startj + 1) = interior_pts(i,j).U;
+            V(j - col(c).startj + 1) = interior_pts(i,j).V;
         end
         
         % rhs of vector equation
@@ -256,19 +270,21 @@ for m = 1:2
        x = A\b;
 
        % Update the approximate solution for the current row
-       for j = startj:endj
-           interior_pts(i,j).U = x(j - startj + 1);
+       for j = col(c).startj:col(c).endj
+           interior_pts(i,j).U = x(j - col(c).startj + 1);
        end
     end
     
     % Store data for plotting on selected steps
     
     if m == 1
-       Z = sparse(N,N);
        for i = 1:N
           for j = 1:N
               if interior_pts(i,j).on == 1
-                 Z(i,j) = interior_pts(i,j).U; 
+                 plot_data(i,j,4) = interior_pts(i,j).U; 
+                 plot_data(i,j,5) = u(interior_pts(i,j).x, ...
+                     interior_pts(i,j).y, tau*m);
+                 plot_data(i,j,6) = plot_data(i,j,1) - plot_data(i,j,2);
               end
           end
        end
@@ -281,12 +297,47 @@ X = linspace(-1., 1., N);
 Y = linspace(-1., 1., N);
 
 figure
-surf(X,Y,Z)
+subplot(2,3,1)
+waterfall(X,Y,plot_data(:,:,1))
 colormap winter
 xlabel('x')
 ylabel('y')
 title('Approximate solution after one timestep')
 
+subplot(2,3,5)
+waterfall(X,Y,plot_data(:,:,2))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Exact solution after one timestep')
+
+subplot(2,3,6)
+waterfall(X,Y,plot_data(:,:,3));
+colormap winter;
+xlabel('x')
+ylabel('y')
+title('Error after one timestep')
+
+subplot(2,3,4)
+waterfall(X,Y,plot_data(:,:,1))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Approximate solution after one timestep')
+
+subplot(2,3,5)
+waterfall(X,Y,plot_data(:,:,2))
+colormap winter
+xlabel('x')
+ylabel('y')
+title('Exact solution after one timestep')
+
+subplot(2,3,6)
+waterfall(X,Y,plot_data(:,:,3));
+colormap winter;
+xlabel('x')
+ylabel('y')
+title('Error after one timestep')
 
 
 end
