@@ -2,32 +2,38 @@ function ADI_graph()
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 
-N= 201;
-h = 0.01;
+TRUE = 1;
+FALSE = 0;
+
+CIRCLE = 1;
+ELLIPSE = 2;
+DIAMOND = 3;
+ELL = 4;
+
+domain = ELL;
+
+N= 101;
+h = 0.02;
 x_min = -1.;
 y_min = -1.;
-
-stencil = make_stencil(h, N, x_min, y_min);
-
-tau = h;
-M = 1./tau;
-
 
 % Set up matrix of gridpoints to represent domain of problem
 for i = 1:N
    % Go along the columns starting at the left
    for j = 1:N
-       if stencil(i,j) == 0
-           % Not an interior point
-           interior_pts(i,j).on = 0; % FALSE
-       else
+       x = x_min + h * (i-1);
+       y = y_min + h * (j-1);
+       if (phi1(x, domain) < y) && (y < phi2(x, domain)) && ...
+                (psi1(y, domain) < x) && (x < psi2(y, domain))
            % Interior point
-           interior_pts(i,j).on = 1; % TRUE
-           interior_pts(i,j).x = x_min + h * (i-1);
-           interior_pts(i,j).y = y_min + h * (j-1);
-           interior_pts(i,j).U = ... % use initial condition
-               g1(interior_pts(i,j).x, interior_pts(i,j).y);
-           interior_pts(i,j).V = 0.;
+           grid(i,j).on = TRUE; 
+           grid(i,j).x = x;
+           grid(i,j).y = y;
+           grid(i,j).U = g1(x,y);  % use initial condition               
+           grid(i,j).V = 0.;
+       else
+           % Exterior point
+           grid(i,j).on = FALSE;
        end
    end
 end
@@ -37,7 +43,7 @@ n_rows = 0;
 for j = 1:N
     % Go along row until we reach the end or find an interior point
     i = 1;
-    while (i <= N) && (interior_pts(i,j).on == 0) % FALSE
+    while (i <= N) && (grid(i,j).on == FALSE)
        i = i + 1; 
     end
 
@@ -50,21 +56,21 @@ for j = 1:N
     n_rows = n_rows + 1;
     row(n_rows).j = j;
     row(n_rows).starti = i;
-    while (i <= N) && (interior_pts(i,j).on == 1) % TRUE
+    while (i <= N) && (grid(i,j).on == TRUE)
        i = i + 1; 
     end
     row(n_rows).endi = i - 1;
     
     % Add boundary value terms to each nonempty row
     row(n_rows).btf.y = y_min + h * (j-1);
-    row(n_rows).btf.x = psi1(row(n_rows).btf.y);
+    row(n_rows).btf.x = psi1(row(n_rows).btf.y, domain);
     row(n_rows).btf.h_prime = x_min + h * (row(n_rows).starti - 1) ...
         - row(n_rows).btf.x;
     row(n_rows).btf.U = ... % use initial condition
         g1(row(n_rows).btf.x, row(n_rows).btf.y);
     
     row(n_rows).btl.y = y_min + h * (j-1);
-    row(n_rows).btl.x = psi2(row(n_rows).btl.y);
+    row(n_rows).btl.x = psi2(row(n_rows).btl.y, domain);
     row(n_rows).btl.h_prime = row(n_rows).btl.x ...
         - ( x_min + h * (row(n_rows).endi - 1) );   
     row(n_rows).btl.U = ... % use initial condition
@@ -76,7 +82,7 @@ n_cols = 0;
 for i = 1:N
     % Go through col until we reach the end or find an interior point
     j = 1;
-    while (j <= N) && (interior_pts(i,j).on == 0) % FALSE
+    while (j <= N) && (grid(i,j).on == FALSE) 
        j = j + 1; 
     end
 
@@ -89,26 +95,32 @@ for i = 1:N
     n_cols = n_cols + 1;
     col(n_cols).i = i;
     col(n_cols).startj = j;
-    while (j <= N) && (interior_pts(i,j).on == 1) % TRUE
+    while (j <= N) && (grid(i,j).on == TRUE) 
        j = j + 1; 
     end
     col(n_cols).endj = j - 1;
     
     % Add boundary value terms to each nonempty col
     col(n_cols).btf.x = x_min + h * (i-1);
-    col(n_cols).btf.y = phi1(col(n_cols).btf.x);
+    col(n_cols).btf.y = phi1(col(n_cols).btf.x, domain);
     col(n_cols).btf.h_prime = y_min + h * (col(n_cols).startj - 1) ...
         - col(n_cols).btf.y;    
     col(n_cols).btf.U = ... % use initial condition
         g1(col(n_cols).btf.x, col(n_cols).btf.y);
     
     col(n_cols).btl.x = x_min + h * (i-1);
-    col(n_cols).btl.y = phi2(col(n_cols).btl.x);
+    col(n_cols).btl.y = phi2(col(n_cols).btl.x, domain);
     col(n_cols).btl.h_prime = col(n_cols).btl.y ...
         - ( y_min + h * (col(n_cols).endj - 1) );
     col(n_cols).btl.U = ... % use initial condition
         g1(col(n_cols).btl.x, col(n_cols).btl.y);
 end
+
+% Define timestep
+
+tau = h;
+M = 1./tau;
+
 
 %{
 disp(n_rows);
@@ -164,33 +176,33 @@ for m = 1:M
        % First, consider special case where the column holds only 1
        % interior point
        if j == col(c).endj
-           interior_pts(i,j).V = interior_pts(i,j).U + ...
+           grid(i,j).V = grid(i,j).U + ...
                (tau / (col(c).btf.h_prime + col(c).btl.h_prime) ) * ...
-               ( (col(c).btl.U - interior_pts(i,j).U) / ...
+               ( (col(c).btl.U - grid(i,j).U) / ...
                     col(c).btl.h_prime ...
-                    - (interior_pts(i,j).U - col(c).btf.U) / ...
+                    - (grid(i,j).U - col(c).btf.U) / ...
                     col(c).btf.h_prime );
            
        % Otherwise the col holds two or more interior points
        else
-            interior_pts(i,j).V = interior_pts(i,j).U + ...
+            grid(i,j).V = grid(i,j).U + ...
                 (tau / (col(c).btf.h_prime + h) ) * ...
-                ( (interior_pts(i,j+1).U - interior_pts(i,j).U) / h ...
-                    - (interior_pts(i,j).U - col(c).btf.U) / ...
+                ( (grid(i,j+1).U - grid(i,j).U) / h ...
+                    - (grid(i,j).U - col(c).btf.U) / ...
                     col(c).btf.h_prime );
             j = j + 1;
             while (j < col(c).endj)
-                interior_pts(i,j).V = interior_pts(i,j).U + ...
-                    (tau / (2*h^2)) * (interior_pts(i,j+1).U ...
-                        - 2 * interior_pts(i,j).U ...
-                        + interior_pts(i,j-1).U);
+                grid(i,j).V = grid(i,j).U + ...
+                    (tau / (2*h^2)) * (grid(i,j+1).U ...
+                        - 2 * grid(i,j).U ...
+                        + grid(i,j-1).U);
                 j = j + 1;
             end
-            interior_pts(i,j).V = interior_pts(i,j).U + ...
+            grid(i,j).V = grid(i,j).U + ...
                 (tau / (h + col(c).btl.h_prime) ) * ...
-                ( (col(c).btl.U - interior_pts(i,j).U) / ...
+                ( (col(c).btl.U - grid(i,j).U) / ...
                     col(c).btl.h_prime ...
-                - (interior_pts(i,j).U - interior_pts(i,j-1).U) / h );                
+                - (grid(i,j).U - grid(i,j-1).U) / h );                
        end
     end
   
@@ -219,9 +231,9 @@ for m = 1:M
        V = zeros(length,1);
        load_vector = zeros(length,1);
        for i = starti:endi
-          V(i - starti + 1) = interior_pts(i,j).V; 
+          V(i - starti + 1) = grid(i,j).V; 
           load_vector(i - starti + 1) = ...
-              f(interior_pts(i,j).x, interior_pts(i,j).y, tau*(m-0.5));
+              f(grid(i,j).x, grid(i,j).y, tau*(m-0.5));
        end
               
        % rhs of vector equation
@@ -244,20 +256,27 @@ for m = 1:M
        A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
                         [-1,0,1], length, length);
        A = (tau/(2*h^2)) * A;
+       
        % Adjust first and last row since boundary points are unevenly
-       % spaced
-       A(1,1) = tau / (h * btf.h_prime);
-       A(1,2) = - tau / (h * (h + btf.h_prime));
-       A(length, length - 1) = - tau / (h * (h + btl.h_prime));
-       A(length, length) = tau / (h * btl.h_prime);
-       A = speye(length) + A ;
+       % spaced.  First consider case when A is 1 x 1
+       if length == 1
+           A(1,1) = tau / (btf.h_prime * btl.h_prime);
+           
+       % Case where A is 2 x 2 or larger
+       else
+            A(1,1) = tau / (h * btf.h_prime);
+            A(1,2) = - tau / (h * (h + btf.h_prime));
+            A(length, length - 1) = - tau / (h * (h + btl.h_prime));
+            A(length, length) = tau / (h * btl.h_prime);
+            A = speye(length) + A ;
+       end
        
        % Solve the vector equation
        x = A\b;
        
        % Update the approximate solution for the current row
        for i = starti:endi
-           interior_pts(i,j).U = x(i - starti + 1);
+           grid(i,j).U = x(i - starti + 1);
        end                   
     end
     
@@ -291,8 +310,8 @@ for m = 1:M
         U = zeros(length,1);
         V = zeros(length,1);
         for j = startj:endj
-            U(j - startj + 1) = interior_pts(i,j).U;
-            V(j - startj + 1) = interior_pts(i,j).V;
+            U(j - startj + 1) = grid(i,j).U;
+            V(j - startj + 1) = grid(i,j).V;
         end
         
         % rhs of vector equation
@@ -316,19 +335,23 @@ for m = 1:M
                         [-1,0,1], length, length);
        A = (tau/(2*h^2)) * A;
        % Adjust first and last row since boundary points are unevenly
-       % spaced
-       A(1,1) = tau / (h * btf.h_prime);
-       A(1,2) = - tau / (h * (h + btf.h_prime));
-       A(length, length - 1) = - tau / (h * (h + btl.h_prime));
-       A(length, length) = tau / (h * btl.h_prime);       
-       A = speye(length) + A ;
+       % spaced.  First consider case when A is 1 x 1
+       if length == 1
+            A(1,1) = tau / (btf.h_prime * btl.h_prime);
+       else
+            A(1,1) = tau / (h * btf.h_prime);
+            A(1,2) = - tau / (h * (h + btf.h_prime));
+            A(length, length - 1) = - tau / (h * (h + btl.h_prime));
+            A(length, length) = tau / (h * btl.h_prime);       
+            A = speye(length) + A ;
+       end
        
        % Solve the vector equation
        x = A\b;
 
        % Update the approximate solution for the current row
        for j = startj:endj
-           interior_pts(i,j).U = x(j - startj + 1);
+           grid(i,j).U = x(j - startj + 1);
        end
     end
     
@@ -337,10 +360,10 @@ for m = 1:M
     if m == 1
        for i = 1:N
           for j = 1:N
-              if interior_pts(i,j).on == 1
-                 plot_data(i,j,1) = interior_pts(i,j).U; 
-                 plot_data(i,j,2) = u(interior_pts(i,j).x, ...
-                     interior_pts(i,j).y, tau*m);
+              if grid(i,j).on == 1
+                 plot_data(i,j,1) = grid(i,j).U; 
+                 plot_data(i,j,2) = u(grid(i,j).x, ...
+                     grid(i,j).y, tau*m);
                  plot_data(i,j,3) = ...
                      abs(plot_data(i,j,1) - plot_data(i,j,2));
               end
@@ -349,10 +372,10 @@ for m = 1:M
     elseif m == M
         for i = 1:N
           for j = 1:N
-              if interior_pts(i,j).on == 1
-                 plot_data(i,j,4) = interior_pts(i,j).U; 
-                 plot_data(i,j,5) = u(interior_pts(i,j).x, ...
-                     interior_pts(i,j).y, tau*m);
+              if grid(i,j).on == 1
+                 plot_data(i,j,4) = grid(i,j).U; 
+                 plot_data(i,j,5) = u(grid(i,j).x, ...
+                     grid(i,j).y, tau*m);
                  plot_data(i,j,6) = ...
                      abs(plot_data(i,j,4) - plot_data(i,j,5));
               end

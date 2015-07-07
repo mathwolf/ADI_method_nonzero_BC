@@ -17,7 +17,7 @@ for i = 1:N
         x = x_min + h * (i-1);
         y = y_min + h * (j-1);
         if (phi1(x) < y) && (y < phi2(x)) && ...
-                (psi1(y) < x) && (x < psi2(y));
+                (psi1(y) < x) && (x < psi2(y))
            stencil(i,j) = 1; 
            % n_pts = n_pts + 1;
         end
