@@ -5,12 +5,19 @@ function ADI_graph()
 TRUE = 1;
 FALSE = 0;
 
+EXPONENT_1 = 1;
+EXPONENT_2 = 2;
+TRIG = 3;
+
+global solution
+solution = EXPONENT_1;
+
 CIRCLE = 1;
 ELLIPSE = 2;
 DIAMOND = 3;
 ELL = 4;
 
-domain = DIAMOND;
+domain = ELL;
 
 N= 101;
 h = 0.02;
@@ -256,16 +263,20 @@ for m = 1:M
        A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
                         [-1,0,1], length, length);
        A = (tau/(2*h^2)) * A;
-       %%%%%%%%%%%%%%%%%%%%%%% Case when A is 1x1
        
        % Adjust first and last row since boundary points are unevenly
        % spaced.  First consider case when A is 1 x 1
        if length == 1
-       A(1,1) = tau / (h * btf.h_prime);
-       A(1,2) = - tau / (h * (h + btf.h_prime));
-       A(length, length - 1) = - tau / (h * (h + btl.h_prime));
-       A(length, length) = tau / (h * btl.h_prime);
-       A = speye(length) + A ;
+           A(1,1) = tau / (btf.h_prime * btl.h_prime);
+           
+       % Case where A is 2 x 2 or larger
+       else
+            A(1,1) = tau / (h * btf.h_prime);
+            A(1,2) = - tau / (h * (h + btf.h_prime));
+            A(length, length - 1) = - tau / (h * (h + btl.h_prime));
+            A(length, length) = tau / (h * btl.h_prime);
+            A = speye(length) + A ;
+       end
        
        % Solve the vector equation
        x = A\b;
@@ -331,12 +342,16 @@ for m = 1:M
                         [-1,0,1], length, length);
        A = (tau/(2*h^2)) * A;
        % Adjust first and last row since boundary points are unevenly
-       % spaced
-       A(1,1) = tau / (h * btf.h_prime);
-       A(1,2) = - tau / (h * (h + btf.h_prime));
-       A(length, length - 1) = - tau / (h * (h + btl.h_prime));
-       A(length, length) = tau / (h * btl.h_prime);       
-       A = speye(length) + A ;
+       % spaced.  First consider case when A is 1 x 1
+       if length == 1
+            A(1,1) = tau / (btf.h_prime * btl.h_prime);
+       else
+            A(1,1) = tau / (h * btf.h_prime);
+            A(1,2) = - tau / (h * (h + btf.h_prime));
+            A(length, length - 1) = - tau / (h * (h + btl.h_prime));
+            A(length, length) = tau / (h * btl.h_prime);       
+            A = speye(length) + A ;
+       end
        
        % Solve the vector equation
        x = A\b;

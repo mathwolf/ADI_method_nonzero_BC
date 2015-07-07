@@ -5,15 +5,23 @@ function ADI_graph()
 TRUE = 1;
 FALSE = 0;
 
+EXPONENT_1 = 1;
+EXPONENT_2 = 2;
+TRIG = 3;
+POLY = 4;
+
+global solution
+solution = POLY;
+
 CIRCLE = 1;
 ELLIPSE = 2;
 DIAMOND = 3;
 ELL = 4;
 
-domain = ELL;
+domain = DIAMOND;
 
-N= 101;
-h = 0.02;
+N= 21;
+h = 0.1;
 x_min = -1.;
 y_min = -1.;
 
@@ -260,8 +268,7 @@ for m = 1:M
        % Adjust first and last row since boundary points are unevenly
        % spaced.  First consider case when A is 1 x 1
        if length == 1
-           A(1,1) = tau / (btf.h_prime * btl.h_prime);
-           
+           A(1,1) = tau / (btf.h_prime * btl.h_prime);           
        % Case where A is 2 x 2 or larger
        else
             A(1,1) = tau / (h * btf.h_prime);
@@ -338,6 +345,7 @@ for m = 1:M
        % spaced.  First consider case when A is 1 x 1
        if length == 1
             A(1,1) = tau / (btf.h_prime * btl.h_prime);
+       % Then case when A is 2 x 2 or larger
        else
             A(1,1) = tau / (h * btf.h_prime);
             A(1,2) = - tau / (h * (h + btf.h_prime));
