@@ -1,11 +1,12 @@
 function x = psi1(y, domain)
 
+% Constants used to switch between different domains for testing.
 CIRCLE = 1;
 ELLIPSE = 2;
 DIAMOND = 3;
 ELL = 4;
 
-% Lower boundary of domain wrt y
+% Lower boundary of test domain wrt y
 if domain == CIRCLE
     x = - sqrt(1. - y^2);
 elseif domain == ELLIPSE

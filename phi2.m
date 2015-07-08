@@ -1,11 +1,12 @@
 function y = phi2(x, domain)
 
+% Constants used to switch between different domains for testing.
 CIRCLE = 1;
 ELLIPSE = 2;
 DIAMOND = 3;
 ELL = 4;
 
-% Upper boundary of domain wrt x
+% Upper boundary of test domain wrt x
 if domain == CIRCLE
     y = sqrt(1. - x^2);
 elseif domain == ELLIPSE
