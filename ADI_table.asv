@@ -15,7 +15,7 @@ EXPONENT_2 = 2;
 TRIG = 3;
 POLY = 4;
 global test_solution
-test_solution = POLY;
+test_solution = EXPONENT_1;
 
 % Constants used to switch between different test domains.
 CIRCLE = 1;
@@ -33,7 +33,7 @@ for p = 1:5
     % a grid with the same uniform spacing in x and y.  The grid goes
     % from -1 to +1.  The actual domain of the PDE will be a subset of these
     % gridpoints.
-    h = 1./(10 + 5*(p-1));
+    h = 1./(100 + 50*(p-1));
     N = 2./h + 1;
     x_min = -1.;
     y_min = -1.;
@@ -327,8 +327,8 @@ for p = 1:5
             for j = j_min:j_max
                 grid(i,j).U = x(j - j_min + 1);
             end
-        end
     end
+    
     
     % Evaluate error at final timestep
     max_nodal_error = 0;
@@ -337,9 +337,9 @@ for p = 1:5
 
     for r = 1:n_rows
         j = row(r).j;
-        i_min = row(r).i_min;
-        i_max = row(r).i_max;
-        for i = i_min:i_max
+        starti = row(r).starti;
+        endi = row(r).endi;
+        for i = starti:endi
            current_error = abs(grid(i,j).U - u(grid(i,j).x, grid(i,j).y, 1));
            if current_error > max_nodal_error
               max_nodal_error = current_error; 

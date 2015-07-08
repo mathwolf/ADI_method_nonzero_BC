@@ -15,7 +15,7 @@ EXPONENT_2 = 2;
 TRIG = 3;
 POLY = 4;
 global test_solution
-test_solution = EXPONENT_2;
+test_solution = EXPONENT_1;
 
 % Constants used to switch between different test domains.
 CIRCLE = 1;
@@ -374,31 +374,31 @@ for m = 1:M
        for i = 1:N
           for j = 1:N
               if grid(i,j).on == 1
-                 plot_data(i,j,7) = grid(i,j).U; 
-                 plot_data(i,j,8) = u(grid(i,j).x, ...
-                     grid(i,j).y, tau*m);
-                 plot_data(i,j,9) = ...
-                     plot_data(i,j,7) - plot_data(i,j,8);
-              end
-          end
-       end
-       %{
-    elseif m == M
-        for i = 1:N
-          for j = 1:N
-              if grid(i,j).on == 1
                  plot_data(i,j,4) = grid(i,j).U; 
                  plot_data(i,j,5) = u(grid(i,j).x, ...
                      grid(i,j).y, tau*m);
                  plot_data(i,j,6) = ...
-                     abs(plot_data(i,j,4) - plot_data(i,j,5));
+                     plot_data(i,j,4) - plot_data(i,j,5);
               end
           end
-       %}
        end
+       
+    elseif m == M
+        for i = 1:N
+          for j = 1:N
+              if grid(i,j).on == 1
+                 plot_data(i,j,7) = grid(i,j).U; 
+                 plot_data(i,j,8) = u(grid(i,j).x, ...
+                     grid(i,j).y, tau*m);
+                 plot_data(i,j,9) = ...
+                     abs(plot_data(i,j,7) - plot_data(i,j,8));
+              end
+          end
+       
+        end
 
+    end
 end
-
 % Create plots
 X = linspace(-1., 1., N);
 Y = linspace(-1., 1., N);
