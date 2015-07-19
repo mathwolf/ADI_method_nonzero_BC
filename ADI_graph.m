@@ -13,9 +13,9 @@ FALSE = 0;
 EXPONENT_1 = 1;
 EXPONENT_2 = 2;
 TRIG = 3;
-POLY = 4;
+POLYNOMIAL = 4;
 global test_solution
-test_solution = EXPONENT_1;
+test_solution = TRIG;
 
 % Constants used to switch between different test domains.
 CIRCLE = 1;
@@ -29,8 +29,8 @@ domain = CIRCLE;
 % a grid with the same uniform spacing in x and y.  The grid goes
 % from -1 to +1.  The actual domain of the PDE will be a subset of these
 % gridpoints.
-N= 601;
-h = 1./300.;
+N= 41;
+h = 1./20.;
 x_min = -1.;
 y_min = -1.;
 
