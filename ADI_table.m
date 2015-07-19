@@ -13,30 +13,31 @@ FALSE = 0;
 EXPONENT_1 = 1;
 EXPONENT_2 = 2;
 TRIG = 3;
-POLY = 4;
+POLYNOMIAL = 4;
 global test_solution
-test_solution = POLY;
+test_solution = EXPONENT_1;
 
 % Constants used to switch between different test domains.
 CIRCLE = 1;
 ELLIPSE = 2;
 DIAMOND = 3;
 ELL = 4;
-domain = ELLIPSE;
+global domain
+domain = CIRCLE;
 
 % Table for storing error data
-table_data = zeros(5,6);
+table_data = zeros(5,3);
 
-% Test five different grid sizes, h = 1/100, 1/150, 1/200, etc
+% Test seven different grid sizes, h = 1/100, 1/150, 1/200, etc
 for p = 1:5
     % Description of spatial grid.  At this point, the method is set up to use 
     % a grid with the same uniform spacing in x and y.  The grid goes
     % from -1 to +1.  The actual domain of the PDE will be a subset of these
     % gridpoints.
-    h = 1./(10 + 5*(p-1));
-    N = 2./h + 1;
-    x_min = -1.;
+    h = 1./(10 * 2^(p-1));
+    x_min = -1.; 
     y_min = -1.;
+    N = 2./h + 1; % the max value of x and y is +1
     
     % Define the gridpoints that are part of the interior of the domain of the
     % PDE.  Check each gridpoint in the array to see if it is an interior 
@@ -47,8 +48,8 @@ for p = 1:5
         for j = 1:N
             x = x_min + h * (i-1);
             y = y_min + h * (j-1);
-            if (phi1(x, domain) < y) && (y < phi2(x, domain)) && ...
-                (psi1(y, domain) < x) && (x < psi2(y, domain))
+            if (phi1(x) < y) && (y < phi2(x)) && ...
+                (psi1(y) < x) && (x < psi2(y))
                 % The point is an interior point
                 grid(i,j).on = TRUE; 
                 grid(i,j).x = x;
@@ -66,7 +67,7 @@ for p = 1:5
     % Create a data structure that describes the rows of the grid.
     n_rows = 0;
     for j = 1:N
-        % Go along the row until we reach the end or find an interior point.
+        % Go along each row until we reach the end or find an interior point.
         i = 1;
         while (i <= N) && (grid(i,j).on == FALSE)
             i = i + 1; 
@@ -79,7 +80,7 @@ for p = 1:5
     
         % We are at the first interior point in a new row
         n_rows = n_rows + 1;    
-        row(n_rows).j = j;      % assign the next number is sequence as the
+        row(n_rows).j = j;      % assign the next number in sequence as the
                                 % index for the current row
         row(n_rows).i_min = i;
     
@@ -91,14 +92,14 @@ for p = 1:5
     
         % Add boundary terms for first and last point in current row
         row(n_rows).btf.y = y_min + h * (j-1);
-        row(n_rows).btf.x = psi1(row(n_rows).btf.y, domain);
+        row(n_rows).btf.x = psi1(row(n_rows).btf.y);
         row(n_rows).btf.h_prime = x_min + h * (row(n_rows).i_min - 1) ...
             - row(n_rows).btf.x;
         row(n_rows).btf.U = g1(row(n_rows).btf.x, row(n_rows).btf.y);
             % using initial conditions for first value of U
     
         row(n_rows).btl.y = y_min + h * (j-1);
-        row(n_rows).btl.x = psi2(row(n_rows).btl.y, domain);
+        row(n_rows).btl.x = psi2(row(n_rows).btl.y);
         row(n_rows).btl.h_prime = row(n_rows).btl.x ...
             - ( x_min + h * (row(n_rows).i_max - 1) );   
         row(n_rows).btl.U = g1(row(n_rows).btl.x, row(n_rows).btl.y);
@@ -134,14 +135,14 @@ for p = 1:5
     
         % Add boundary terms for first and last points in current column
         col(n_cols).btf.x = x_min + h * (i-1);
-        col(n_cols).btf.y = phi1(col(n_cols).btf.x, domain);
+        col(n_cols).btf.y = phi1(col(n_cols).btf.x);
         col(n_cols).btf.h_prime = y_min + h * (col(n_cols).j_min - 1) ...
             - col(n_cols).btf.y;    
         col(n_cols).btf.U = g1(col(n_cols).btf.x, col(n_cols).btf.y);
             % use initial conditions for first value of U
             
         col(n_cols).btl.x = x_min + h * (i-1);
-        col(n_cols).btl.y = phi2(col(n_cols).btl.x, domain);
+        col(n_cols).btl.y = phi2(col(n_cols).btl.x);
         col(n_cols).btl.h_prime = col(n_cols).btl.y ...
             - ( y_min + h * (col(n_cols).j_max - 1) );
         col(n_cols).btl.U = g1(col(n_cols).btl.x, col(n_cols).btl.y);
@@ -332,8 +333,6 @@ for p = 1:5
     
     % Evaluate error at final timestep
     max_nodal_error = 0;
-    nodal_error_squared = 0;    
-    root_mean_sq_error = 0;
 
     for r = 1:n_rows
         j = row(r).j;
@@ -344,11 +343,8 @@ for p = 1:5
            if current_error > max_nodal_error
               max_nodal_error = current_error; 
            end
-           nodal_error_squared = nodal_error_squared + current_error^2;
         end
     end
-    root_mean_sq_error = sqrt(h^2 * nodal_error_squared);
-
     
     % Write data to table
     table_data(p,1) = h;
@@ -358,19 +354,10 @@ for p = 1:5
        table_data(p,3) = log(table_data(p-1,2) / table_data(p,2)) / ...
            log(table_data(p-1,1) / table_data(p,1)); 
     end   
-    table_data(p,4) = h;
-    table_data(p,5) = root_mean_sq_error;
-    if p ~= 1
-       % estimate order of convergence for rms err
-       table_data(p,6) = log(table_data(p-1,5) / table_data(p,5)) / ...
-           log(table_data(p-1,4) / table_data(p,4));
-    end
     
 end
 
 % Display table of error information
 disp('    h                  max error          order of conv');
 disp(table_data(:,1:3));
-disp('    h                  rms error          order of conv');
-disp(table_data(:,4:6));
 end

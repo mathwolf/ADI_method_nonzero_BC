@@ -22,14 +22,15 @@ CIRCLE = 1;
 ELLIPSE = 2;
 DIAMOND = 3;
 ELL = 4;
-domain = ELLIPSE;
+global domain
+domain = CIRCLE;
 
 % Description of spatial grid.  At this point, the method is set up to use 
 % a grid with the same uniform spacing in x and y.  The grid goes
 % from -1 to +1.  The actual domain of the PDE will be a subset of these
 % gridpoints.
-N= 41;
-h = 0.05;
+N= 601;
+h = 1./300.;
 x_min = -1.;
 y_min = -1.;
 
@@ -42,8 +43,8 @@ for i = 1:N
    for j = 1:N
        x = x_min + h * (i-1);
        y = y_min + h * (j-1);
-       if (phi1(x, domain) < y) && (y < phi2(x, domain)) && ...
-                (psi1(y, domain) < x) && (x < psi2(y, domain))
+       if (phi1(x) < y) && (y < phi2(x)) && ...
+                (psi1(y) < x) && (x < psi2(y))
            % The point is an interior point
            grid(i,j).on = TRUE; 
            grid(i,j).x = x;
@@ -74,7 +75,7 @@ for j = 1:N
     
     % We are at the first interior point in a new row
     n_rows = n_rows + 1;    
-    row(n_rows).j = j;      % assign the next number is sequence as the
+    row(n_rows).j = j;      % assign the next number in sequence as the
                             % index for the current row
     row(n_rows).i_min = i;
     
@@ -86,14 +87,14 @@ for j = 1:N
     
     % Add boundary terms for first and last point in current row
     row(n_rows).btf.y = y_min + h * (j-1);
-    row(n_rows).btf.x = psi1(row(n_rows).btf.y, domain);
+    row(n_rows).btf.x = psi1(row(n_rows).btf.y);
     row(n_rows).btf.h_prime = x_min + h * (row(n_rows).i_min - 1) ...
         - row(n_rows).btf.x;
     row(n_rows).btf.U = g1(row(n_rows).btf.x, row(n_rows).btf.y);
             % using initial conditions for first value of U
     
     row(n_rows).btl.y = y_min + h * (j-1);
-    row(n_rows).btl.x = psi2(row(n_rows).btl.y, domain);
+    row(n_rows).btl.x = psi2(row(n_rows).btl.y);
     row(n_rows).btl.h_prime = row(n_rows).btl.x ...
         - ( x_min + h * (row(n_rows).i_max - 1) );   
     row(n_rows).btl.U = g1(row(n_rows).btl.x, row(n_rows).btl.y);
@@ -129,14 +130,14 @@ for i = 1:N
     
     % Add boundary terms for first and last points in current column
     col(n_cols).btf.x = x_min + h * (i-1);
-    col(n_cols).btf.y = phi1(col(n_cols).btf.x, domain);
+    col(n_cols).btf.y = phi1(col(n_cols).btf.x);
     col(n_cols).btf.h_prime = y_min + h * (col(n_cols).j_min - 1) ...
         - col(n_cols).btf.y;    
     col(n_cols).btf.U = g1(col(n_cols).btf.x, col(n_cols).btf.y);
             % use initial conditions for first value of U
             
     col(n_cols).btl.x = x_min + h * (i-1);
-    col(n_cols).btl.y = phi2(col(n_cols).btl.x, domain);
+    col(n_cols).btl.y = phi2(col(n_cols).btl.x);
     col(n_cols).btl.h_prime = col(n_cols).btl.y ...
         - ( y_min + h * (col(n_cols).j_max - 1) );
     col(n_cols).btl.U = g1(col(n_cols).btl.x, col(n_cols).btl.y);

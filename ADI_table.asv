@@ -15,7 +15,7 @@ EXPONENT_2 = 2;
 TRIG = 3;
 POLY = 4;
 global test_solution
-test_solution = EXPONENT_1;
+test_solution = POLY;
 
 % Constants used to switch between different test domains.
 CIRCLE = 1;
@@ -24,19 +24,22 @@ DIAMOND = 3;
 ELL = 4;
 domain = ELLIPSE;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This combination of test parameters seems to produce an error.
+
 % Table for storing error data
 table_data = zeros(5,6);
 
-% Test five different grid sizes, h = 1/100, 1/150, 1/200, etc
-for p = 1:5
+% Test seven different grid sizes, h = 1/100, 1/150, 1/200, etc
+for p = 1:7
     % Description of spatial grid.  At this point, the method is set up to use 
     % a grid with the same uniform spacing in x and y.  The grid goes
     % from -1 to +1.  The actual domain of the PDE will be a subset of these
     % gridpoints.
-    h = 1./(100 + 50*(p-1));
-    N = 2./h + 1;
-    x_min = -1.;
+    h = 1./(100 + 5*(p-1));
+    x_min = -1.; 
     y_min = -1.;
+    N = 2./h + 1; % set max value of x and y to be +1
     
     % Define the gridpoints that are part of the interior of the domain of the
     % PDE.  Check each gridpoint in the array to see if it is an interior 
@@ -327,8 +330,8 @@ for p = 1:5
             for j = j_min:j_max
                 grid(i,j).U = x(j - j_min + 1);
             end
+        end
     end
-    
     
     % Evaluate error at final timestep
     max_nodal_error = 0;
@@ -337,9 +340,9 @@ for p = 1:5
 
     for r = 1:n_rows
         j = row(r).j;
-        starti = row(r).starti;
-        endi = row(r).endi;
-        for i = starti:endi
+        i_min = row(r).i_min;
+        i_max = row(r).i_max;
+        for i = i_min:i_max
            current_error = abs(grid(i,j).U - u(grid(i,j).x, grid(i,j).y, 1));
            if current_error > max_nodal_error
               max_nodal_error = current_error; 
