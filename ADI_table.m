@@ -15,7 +15,7 @@ EXPONENT_2 = 2;
 TRIG = 3;
 POLYNOMIAL = 4;
 global test_solution
-test_solution = POLYNOMIAL;
+test_solution = EXPONENT_1;
 
 % Constants used to switch between different test domains.
 CIRCLE = 1;
@@ -28,7 +28,7 @@ domain = CIRCLE;
 % Table for storing error data
 table_data = zeros(5,3);
 
-% Test FIVE different grid sizes, h = 1/10, 1/20, 1/40, etc
+% Test five different grid sizes, h = 1/10, 1/20, 1/40, etc
 for p = 1:5
     % Description of spatial grid.  At this point, the method is set up to use 
     % a grid with the same uniform spacing in x and y.  The grid goes

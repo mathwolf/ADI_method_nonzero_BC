@@ -15,7 +15,7 @@ EXPONENT_2 = 2;
 TRIG = 3;
 POLYNOMIAL = 4;
 global test_solution
-test_solution = TRIG;
+test_solution = EXPONENT_1;
 
 % Constants used to switch between different test domains.
 CIRCLE = 1;
