@@ -9,7 +9,7 @@ POLY = 4;
 global test_solution
 
 if test_solution == TRIG
-    z = (1024*x + 640*y) * cos(16*x^2 + 4*y^2 + t) + ...
+    z = (10240*x^2 + 640*y^2) * cos(16*x^2 + 4*y^2 + t) + ...
         390 * sin(16*x^2 + 4*y^2 + t);
 elseif test_solution == EXPONENT_1
     z = - exp(x+y+t);

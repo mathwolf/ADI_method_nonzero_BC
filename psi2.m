@@ -5,6 +5,8 @@ CIRCLE = 1;
 ELLIPSE = 2;
 DIAMOND = 3;
 ELL = 4;
+RECTANGLE = 5;
+DIAMOND_2 = 6;
 global domain
 
 % Upper boundary of test domain wrt y
@@ -20,11 +22,22 @@ elseif domain == DIAMOND
     else
         x = 0;
     end
+elseif domain == DIAMOND_2
+    if (-1 <= y) && (y <= 0)
+        x =  0.5*y + 0.5;
+    elseif (0 <= y) && (y <= 0.5)
+        x = - y + 0.5;
+    else
+        x = 0;
+    end
 elseif domain == ELL
     if (-1 <= y) && (y <= 1)
         x = 1;
     else
         x = 0;
+    end
+elseif domain == RECTANGLE
+    x = 1.;
 end
 end
 
