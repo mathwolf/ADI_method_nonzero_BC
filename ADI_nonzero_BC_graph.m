@@ -4,9 +4,11 @@ function ADI_nonzero_BC_graph()
 
 % ADI method for solution of parabolic PDE with Dirichlet boundary
 % conditions. This program tests the method using the function
-% e^(x+y+t) using spatial and temporal grids with spacing 0.01.  The
+% e^(x+y++z+t) using spatial and temporal grids with spacing 0.01.  The
 % exact solution, approximate solution, and error are displayed
 % graphically.
+
+% Now in 3D!
 
 % Use a uniform spatial grid of 0.01 in both x and y
 N = 100;
@@ -17,13 +19,15 @@ tau = 0.01;
 M = 101;
 
 % Array of points used for plots
-plot_data = zeros(N+1,N+1,6);
+plot_data = zeros(N+1,N+1,N+1,6);
 
 % Set up gridpoints and fill in with initial conditions
-U = zeros(N+1,N+1);
+U = zeros(N+1,N+1,N+1);
 for i = 0:N
    for j = 0:N
-      U(i+1, j+1) = g1(h*i, h*j); 
+       for k = 0:N
+        U(i+1, j+1, k+1) = g1(h*i, h*j, h*k); 
+       end
    end
 end
 
@@ -33,10 +37,10 @@ tridiagonal = spdiags([-ones(N-1,1), 2*ones(N-1,1), -ones(N-1,1)], ...
 A = speye(N-1) + (tau/(2*h^2)) * tridiagonal;
 
 % Matrix V used on RHS of matrix formulas, interior points only
-V = zeros(N-1,N-1);
+V = zeros(N-1,N-1,N-1);
 
 % Array of values for forcing term
-load_array = zeros(N+1,N+1);
+load_array = zeros(N+1,N+1,N+1);
 
 % Evaluate each timestep
 for m = 1:M
@@ -44,8 +48,10 @@ for m = 1:M
     % gridpoint at one half of a timestep
     for i = 1:N-1
        for j = 1:N-1
-          load_array(i,j) = (1/2)*(f(h*i, h*j, tau*(m-1)) + ...
-              f(h*i, h*j, tau*m)); 
+           for k = 1:N-1
+            load_array(i,j) = (1/2)*(f(h*i, h*j, h*k, tau*(m-1)) + ...
+                f(h*i, h*j, h*k, tau*m)); 
+           end
        end
     end
     

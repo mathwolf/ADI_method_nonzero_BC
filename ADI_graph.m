@@ -3,29 +3,34 @@ function ADI_graph()
 % Matlab R2013a
 
 % ADI method for the solution of the parabolic PDE with Dirichlet boundary
-% conditions.  In this method the domain of the problem is an arbitrary,
-% possibly nonrectangular region.
+% conditions.  
+% Moving from 2D to 3D.  Start with 0 Dirichlet boundary conditions,
+% a square domain, and the simple exponential test function.
 
 TRUE = 1;
 FALSE = 0;
 
 % Constants used to switch between different test functions.
+% Right now using EXP_0 to match the 0 Dirichlet BCs.
 EXPONENT_1 = 1;
 EXPONENT_2 = 2;
 TRIG = 3;
 POLYNOMIAL = 4;
+EXPONENT_0 = 5;
 global test_solution
-test_solution = EXPONENT_1;
+test_solution = EXPONENT_0;
 
 % Constants used to switch between different test domains.
+% Right now only the square domain is defined in 3D.
 CIRCLE = 1;
 ELLIPSE = 2;
 DIAMOND = 3;
 ELL = 4;
 RECTANGLE = 5;
 DIAMOND_2 = 6;
+SQUARE = 7;
 global domain
-domain = ELL;
+domain = SQUARE;
 
 % Description of spatial grid.  We divide both the x and y dimensions of
 % the problem into the same number of gridpoints.  First, identify the min 
@@ -54,144 +59,83 @@ else
    y_max = 1;
 end
 
+% At this point we override the above min/max definitions to
+% implement the method on a 3D unit cube.  The above definitions
+% can be corrected later.
+
+x_min = 0;
+x_max = 1;
+y_min = 0;
+y_max = 1;
+z_min = 0;
+z_max = 1;
+
+
 N = 80;
 hx = (x_max - x_min)/N;
 hy = (y_max - y_min)/N;
+hz = (z_max - z_min)/N;
 
-% Define the gridpoints that are part of the interior of the domain of the
-% PDE.  Check each gridpoint in the array to see if it is an interior 
-% point.  Examine one column at a time beginning with the leftmost column
-% of the grid.
-for i = 1:N-1
-   % Check each point in the column starting with the first row
-   for j = 1:N-1
-       x = x_min + hx * i;
-       y = y_min + hy * j;
-       if (phi1(x) < y) && (y < phi2(x)) && ...
-                (psi1(y) < x) && (x < psi2(y))
-           % The point is an interior point
-           grid(i,j).on = TRUE; 
-           grid(i,j).x = x;
-           grid(i,j).y = y;
-           grid(i,j).U = g1(x,y);   % use initial condition to fill in the
-                                    % value of the approximation
-           grid(i,j).V = 0.;
-       else
-           % The point is an exterior point
-           grid(i,j).on = FALSE;
-       end
+% For the simple problem, there is no need for a complicated data 
+% structure.  The entire problem is defined on a rectangular prism
+% with the boundary points of the domain on the edges of prism.
+grid = zeros(N+1, N+1, N+1);
+% Fill in the initial value of the PDE
+for i = 0:N
+   for j = 0:N
+      for k = 0:N
+         grid(i+1, j+1, k+1) = g1(h*i, h*j, h*k);
+      end
    end
 end
 
-% Create a data structure that describes the rows of the grid.
-n_rows = 0;
-for j = 1:N-1
-    % Go along the row until we reach the end or find an interior point.
-    i = 1;
-    while (i <= N-1) && (grid(i,j).on == FALSE)
-       i = i + 1; 
-    end
-
-    if i > N-1
-       % We are at the end of an empty row, go to the next row
-       continue;
-    end
-    
-    % We are at the first interior point in a new row
-    n_rows = n_rows + 1;    
-    row(n_rows).j = j;      % assign the next number in sequence as the
-                            % index for the current row
-    row(n_rows).i_min = i;
-    
-    % Go along the row until we reach the end or or find an exterior point
-    while (i <= N-1) && (grid(i,j).on == TRUE)
-       i = i + 1; 
-    end
-    row(n_rows).i_max = i - 1;
-    
-    % Add boundary terms for first and last point in current row
-    row(n_rows).btf.y = y_min + hy * j;
-    row(n_rows).btf.x = psi1(row(n_rows).btf.y);
-    row(n_rows).btf.h_prime = x_min + hx * row(n_rows).i_min ...
-        - row(n_rows).btf.x;
-    row(n_rows).btf.U = g1(row(n_rows).btf.x, row(n_rows).btf.y);
-            % using initial conditions for first value of U
-    
-    row(n_rows).btl.y = y_min + hy * j;
-    row(n_rows).btl.x = psi2(row(n_rows).btl.y);
-    row(n_rows).btl.h_prime = row(n_rows).btl.x ...
-        -  ( x_min + hx * row(n_rows).i_max );   
-    row(n_rows).btl.U = g1(row(n_rows).btl.x, row(n_rows).btl.y);
-            % using initial conditions
-end
-
-% Create a data structure that describes the columns of the grid.
-n_cols = 0;
-for i = 1:N - 1
-    % Go through col until we reach the end or find an interior point
-    j = 1;
-    while (j <= N - 1) && (grid(i,j).on == FALSE) 
-       j = j + 1; 
-    end
-
-    if j > N - 1
-       % We are at the end of an empty col, go to the next col
-       continue;
-    end
-    
-    % We are at the first interior point in a new col
-    n_cols = n_cols + 1;
-    col(n_cols).i = i;      % assign the next number in sequence as the
-                            % index for the current column
-    col(n_cols).j_min = j;
-    
-    % Go through the column until we reach the end or find an exterior
-    % point
-    while (j <= N-1) && (grid(i,j).on == TRUE) 
-       j = j + 1; 
-    end
-    col(n_cols).j_max = j - 1;
-    
-    % Add boundary terms for first and last points in current column
-    col(n_cols).btf.x = x_min + hx * i;
-    col(n_cols).btf.y = phi1(col(n_cols).btf.x);
-    col(n_cols).btf.h_prime = y_min + hy * col(n_cols).j_min ...
-        - col(n_cols).btf.y;    
-    col(n_cols).btf.U = g1(col(n_cols).btf.x, col(n_cols).btf.y);
-            % use initial conditions for first value of U
-            
-    col(n_cols).btl.x = x_min + hx * i;
-    col(n_cols).btl.y = phi2(col(n_cols).btl.x);
-    col(n_cols).btl.h_prime = col(n_cols).btl.y ...
-        - ( y_min + hy * col(n_cols).j_max  );
-    col(n_cols).btl.U = g1(col(n_cols).btl.x, col(n_cols).btl.y);
-            % use initial conditions
-end
-
-% Define temporal grid.  Use a timestep of the same size as the larger of
-% the two spactial grids. Go to time 1.
-tau = max([hx hy]);
-M = floor(1./tau) + 1;
+% Define temporal grid.  Use a timestep of the same size as the spatial 
+% grids. Go to time 1.
+tau = h;
+M = 1;
 
 % Allocate space for plots.
-plot_data = zeros(N-1,N-1,9);
+plot_data = zeros(N+1,N+1,N+1,9);
 
 % Save initial state to plot for debugging
-for i = 1:N - 1
-    for j = 1:N - 1
-        if grid(i,j).on == 1
-            plot_data(i,j,1) = grid(i,j).U; 
-            plot_data(i,j,2) = u(grid(i,j).x, ...
-                grid(i,j).y, 0);
-            plot_data(i,j,3) = plot_data(i,j,1) - plot_data(i,j,2);
+for i = 0:N 
+    for j = 0:N
+        for k = 0:N
+            plot_data(i+1, j+1, k+1, 1) = grid(i+1, j+1, k+1);
         end
     end
 end
 
+% Grids used to hold partial steps for the method
+V1 = zeros(N+1, N+1, N+1);
+V2 = zeros(N+1, N+1, N+1);
+V3 = zeros(N+1, N+1, N+1);
+
+% Grid used for forcing terrm
+load_array = zeros(N+1,N+1,N+1);
 
 % Evaluate each timestep.
 for m = 1:M
-    % Calculate the value of the function V at every interior gridpoint.
+    % Populate the array that describes the effect of the forcing term
+    for i = 1:N-1
+       for j = 1:N-1
+           for k = 1:N-1
+            load_array(i,j) = (1/2)*(f(h*i, h*j, h*k, tau*(m-1)) + ...
+                f(h*i, h*j, h*k, tau*m)); 
+           end
+       end
+    end
+    
+    % Create an array of values for V1 at each interior gridpoint
+    for i = 1:N-1
+       for j = 1:N-1
+          V(i,j) = U(i+1,j+1) + ...
+              (tau / (2*h^2)) * (U(i+1,j) - 2*U(i+1,j+1) + U(i+1,j+2));
+       end
+    end
+    
+    
+    % Calculate the value of the function V1 at every interior gridpoint.
     for c = 1:n_cols
        i = col(c).i;
        j = col(c).j_min;
