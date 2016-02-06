@@ -12,8 +12,7 @@ global test_solution
 if test_solution == TRIG
     z = (10240*x^2 + 640*y^2) * cos(16*x^2 + 4*y^2 + t) + ...
         390 * sin(16*x^2 + 4*y^2 + t);
-elseif test_solution == EXPONENT_0
-    z = - x * y * (-7 + 3*y + 3*x + x*y) * exp(x + y + t);
+elseif test_solution == EXPONENT_
 elseif test_solution == EXPONENT_1
     z = - exp(x+y+t);
 elseif test_solution == EXPONENT_2

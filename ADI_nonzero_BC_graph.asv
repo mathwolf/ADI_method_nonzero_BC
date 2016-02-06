@@ -18,10 +18,10 @@ EXPONENT_2 = 2;
 TRIG = 3;
 POLY = 4;
 global test_solution
-test_solution = TRIG; % exp test function with 0 BC
+test_solution = EXPONENT_2; % exp test function with 0 BC
 
 % Turn on or off perturbation on half step boundary conditions
-perturbation = FALSE;
+PERTURBATION = TRUE;
 
 % Use a uniform spatial grid of 0.01 in both x and y
 N = 100;
@@ -96,10 +96,8 @@ for m = 1:M
             g2(h*N, h*j, tau*(m-1)) + (tau/(2*h^2)) * ...
             (g2(h*N, h*(j-1), tau*(m-1)) - 2*g2(h*N, h*j, tau*(m-1)) + ...
             g2(h*N, h*(j+1), tau*(m-1)));
-        
         else
-            btf = g2(0, h*j, tau*m) + g2(0, h*j, tau*(m-1));
-            btl = g2(h*N, h*j, tau*m) + g2(h*N, h*j, tau*(m-1));
+            
         end
         % Find rhs of vector equation
         b = D*V(1:N-1,j) + tau * load_array(1:N-1,j);

@@ -19,9 +19,6 @@ POLY = 4;
 global test_solution
 test_solution = EXPONENT_2; % exp test function with 0 BC
 
-% Turn on or off perturbation on half step boundary conditions
-perturbation = FALSE;
-
 % Table for storing error data
 table_data = zeros(5,6);
 
@@ -86,8 +83,6 @@ for p = 1:5
         for j = 1:N-1  
             % Calculate the boundary values for the first and last points,
             % no perturbation terms
-            if perturbation == TRUE
-                
             btf = g2(0, h*j, tau*m) - (tau/(2*h^2)) * ...
                 (g2(0, h*(j-1), tau*m) - 2*g2(0, h*j, tau*m) + ...
                 g2(0, h*(j+1), tau*m)) + ...
@@ -101,10 +96,6 @@ for p = 1:5
                 (g2(h*N, h*(j-1), tau*(m-1)) - 2*g2(h*N, h*j, tau*(m-1)) + ...
                 g2(h*N, h*(j+1), tau*(m-1)));
             
-            else
-                btf = g2(0, h*j, tau*m) + g2(0, h*j, tau*(m-1));
-                btl = g2(h*N, h*j, tau*m) + g2(h*N, h*j, tau*(m-1));
-            end
             % Find rhs of vector equation
             b = D*V(1:N-1,j) + tau * load_array(1:N-1,j);
             % Add effect of boundary values to rhs
