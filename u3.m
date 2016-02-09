@@ -12,11 +12,11 @@ global test_solution
 if test_solution == EXPONENT_0
     w = x * (1-x) * y * (1-y) * z * (1-z) * exp(x+y+z+t);
 elseif test_solution == TRIG
-    w = 10 * cos(16*x^2 + 4*y^2 + t);
+    w = 10 * cos(16*x^2 + 4*y^2 + z^2 + t);
 elseif test_solution == EXPONENT_1
-    w = exp(x + y + t);
+    w = exp(x + y + z + t);
 elseif test_solution == EXPONENT_2
-    w = exp(3*x + 2*y + t);
+    w = exp(4*x + 3*y + 2*z + t);
 elseif test_solution == POLY
     w = 40*x^3 - 60*x^2*y + 20*y^3 + 10*t;
 end
