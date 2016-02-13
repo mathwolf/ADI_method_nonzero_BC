@@ -1,4 +1,4 @@
-function Douglas_Gunn_3D_table()
+function Douglas_Rachford_3D_table()
 
 % Matlab R2013a
 
@@ -12,13 +12,13 @@ EXPONENT_2 = 2;
 TRIG = 3;
 POLY = 4;
 global test_solution
-test_solution = EXPONENT_1; % exp test function with 0 BC
+test_solution = EXPONENT_0; % exp test function with 0 BC
 
 % Turn on or off perturbation on half step boundary conditions
 OFF = 0;
 PARTIAL = 1;
 FULL = 2;
-perturbation = FULL;
+perturbation = OFF;
 
 % Table for storing error data
 table_data = zeros(5,6);
@@ -26,7 +26,7 @@ table_data = zeros(5,6);
 % Check five different grid sizes. Each step will decrease the size by 
 % half.
 
-for p = 1:2
+for p = 1:5
     
     % Use a spatial grid of 0.2 times 2 to the power p-1
     N = 5 * 2^(p-1);
@@ -47,13 +47,18 @@ for p = 1:2
        end
     end
 
-    % Tridiagonal matrices used for ADI method
+    % Array used to hold boundary values for the next step
+    % Only the boundary points are used, but I am too lazy to figure
+    % out how to store this efficiently right now
+    U_next = zeros(N+1,N+1,N+1);
+
+    % Create tridiagonal matrix used on left hand side of ADI method
     tridiagonal = spdiags([-ones(N-1,1), 2*ones(N-1,1), -ones(N-1,1)], ...
-                        [-1,0,1], N-1, N-1);
+                            [-1,0,1], N-1, N-1);
     A = speye(N-1) + (tau/(2*h^2)) * tridiagonal;
 
-    % Array V used on RHS of matrix formulas, interior points only
-    V = zeros(N+1,N+1,N+1);
+    % Create tridiagonal matrix used on right hand side of method
+    D = speye(N-1) - (tau/(2*h^2)) * tridiagonal;
 
     % Array for forcing term, used at interior points only
     load_array = zeros(N-1,N-1,N-1);
@@ -71,23 +76,17 @@ for p = 1:2
            end
         end
         
-        % Find only the boundary values of V (the difference array) at
+        % Find only the boundary values of U at
         % the next full timestep.  We will use these values to get the
         % BCs on the subsequent steps of the method.
         for i = 0:N
            for j = 0:N
-              V(1,i+1,j+1) = g4(0, h*i, h*j, tau*m) ...
-                  - g4(0, h*i, h*j, tau*(m-1));
-              V(N+1, i+1, j+1) =  g4(h*N, h*i, h*j, tau*m)...
-                  - g4(h*N, h*i, h*j, tau*(m-1));
-              V(i+1, 1, j+1) = g4(h*i, 0, h*j, tau*m) ...
-                  - g4(h*i, 0, h*j, tau*(m-1));
-              V(i+1, N+1, j+1) = g4(h*i, h*N, h*j, tau*m) ...
-                  - g4(h*i, h*N, h*j, tau*(m-1));
-              V(i+1,j+1,1) = g4(h*i, h*j, 0, tau*m) ...
-                  - g4(h*i, h*j, 0, tau*(m-1));
-              V(i+1, j+1, N+1) = g4(h*i, h*j, h*N, tau*m) ...
-                  - g4(h*i, h*j, h*N, tau*(m-1));
+              U_next(1,i+1,j+1) = g4(0, h*i, h*j, tau*m);
+              U_next(N+1, i+1, j+1) =  g4(h*N, h*i, h*j, tau*m);
+              U_next(i+1, 1, j+1) = g4(h*i, 0, h*j, tau*m);
+              U_next(i+1, N+1, j+1) = g4(h*i, h*N, h*j, tau*m);
+              U_next(i+1,j+1,1) = g4(h*i, h*j, 0, tau*m);
+              U_next(i+1, j+1, N+1) = g4(h*i, h*j, h*N, tau*m);
            end
         end    
 
@@ -99,40 +98,38 @@ for p = 1:2
                 % Find boundary values for first and last point, no perturbation
                 % term
                 if perturbation == FULL            
-                    btf = V(1,j,k) - (tau/(2*h^2)) * ...
-                        (V(1,j,k-1) - 2 * V(1,j,k) + V(1,j,k+1)) ...
-                        - (tau/(2*h^2)) * ...
-                        (V(1,j-1,k) - 2 * V(1,j,k) + V(1,j+1,k)) ...
-                        +(tau^2/(4*h^4)) * ...
-                        (V(1,j-1,k-1) - 2 * V(1,j,k-1) + V(1,j+1,k-1) ...
-                        - 2 * V(1,j-1,k) + 4 * V(1,j,k) - 2 * V(1,j+1,k) ...
-                        + V(1,j-1,k+1) - 2 * V(1,j,k+1) + V(1,j+1,k+1));
-                    btl = V(N+1,j,k) - (tau/(2*h^2)) * ...
-                        (V(N+1,j,k-1) - 2 * V(N+1,j,k) + V(N+1,j,k+1)) ...
-                        - (tau/(2*h^2)) * ...
-                        (V(N+1,j-1,k) - 2 * V(N+1,j,k) + V(N+1,j+1,k)) ...
-                        +(tau^2/(4*h^4)) * ...
-                        (V(N+1,j-1,k-1) - 2 * V(N+1,j,k-1) + V(N+1,j+1,k-1) ...
-                        - 2 * V(N+1,j-1,k) + 4 * V(N+1,j,k) - 2 * V(N+1,j+1,k) ...
-                        + V(N+1,j-1,k+1) - 2 * V(N+1,j,k+1) + V(N+1,j+1,k+1));
-                elseif perturbation == PARTIAL
-                    btf = V(1,j,k) - (tau/(2*h^2)) * ...
-                        (V(1,j,k-1) - 2 * V(1,j,k) + V(1,j,k+1));
-                    btl = V(N+1,j,k) - (tau/(2*h^2)) * ...
-                        (V(N+1,j,k-1) - 2 * V(N+1,j,k) + V(N+1,j,k+1));
+    %                 btf = V(1,j,k) - (tau/(2*h^2)) * ...
+    %                     (V(1,j,k-1) - 2 * V(1,j,k) + V(1,j,k+1)) ...
+    %                     - (tau/(2*h^2)) * ...
+    %                     (V(1,j-1,k) - 2 * V(1,j,k) + V(1,j+1,k)) ...
+    %                     +(tau^2/(4*h^4)) * ...
+    %                     (V(1,j-1,k-1) - 2 * V(1,j,k-1) + V(1,j+1,k-1) ...
+    %                     - 2 * V(1,j-1,k) + 4 * V(1,j,k) - 2 * V(1,j+1,k) ...
+    %                     + V(1,j-1,k+1) - 2 * V(1,j,k+1) + V(1,j+1,k+1));
+    %                 btl = V(N+1,j,k) - (tau/(2*h^2)) * ...
+    %                     (V(N+1,j,k-1) - 2 * V(N+1,j,k) + V(N+1,j,k+1)) ...
+    %                     - (tau/(2*h^2)) * ...
+    %                     (V(N+1,j-1,k) - 2 * V(N+1,j,k) + V(N+1,j+1,k)) ...
+    %                     +(tau^2/(4*h^4)) * ...
+    %                     (V(N+1,j-1,k-1) - 2 * V(N+1,j,k-1) + V(N+1,j+1,k-1) ...
+    %                     - 2 * V(N+1,j-1,k) + 4 * V(N+1,j,k) - 2 * V(N+1,j+1,k) ...
+    %                     + V(N+1,j-1,k+1) - 2 * V(N+1,j,k+1) + V(N+1,j+1,k+1));
+    %             elseif perturbation == PARTIAL
+    %                 btf = V(1,j,k) - (tau/(2*h^2)) * ...
+    %                     (V(1,j,k-1) - 2 * V(1,j,k) + V(1,j,k+1));
+    %                 btl = V(N+1,j,k) - (tau/(2*h^2)) * ...
+    %                     (V(N+1,j,k-1) - 2 * V(N+1,j,k) + V(N+1,j,k+1));
                 else
-                    btf = V(1,j,k);
-                    btl = V(N+1,j,k);
+                    btf = U_next(1,j,k) + U(1,j,k);
+                    btl = U_next(N+1,j,k) + U(N+1,j,k);
+
                 end
 
                 % Find rhs of vector equation
                 % First, create a vector describing the three terms that 
                 % contain a difference quotients.
-                b = zeros(N-1,1);
+                b = D*U(2:N,j,k);
                 for i = 2:N
-                    % Add effects of x derivative
-                    b(i-1) = (tau / (h^2)) * ...
-                        (U(i-1,j,k) - 2*U(i,j,k) + U(i+1,j,k));
                     % Add effects of y derivative
                     b(i-1) = b(i-1) + (tau / (h^2)) * ...
                         (U(i,j-1,k) - 2*U(i,j,k) + U(i,j+1,k));
@@ -146,9 +143,18 @@ for p = 1:2
                 b(1) = b(1) + (tau/(2*h^2)) * btf;
                 b(N-1) = b(N-1) + (tau/(2*h^2)) * btl;
                 % Solve for approximate values of V at one-third timestep
-                V(2:N,j,k) = A\b;
+                U_next(2:N,j,k) = A\b;
             end
         end
+
+        % Store plot data for debugging
+    %     for i = 1:N+1
+    %         for j = 1:N+1
+    %             plot_data(i,j,1) = U(i,j,3);
+    %             plot_data(i,j,2) = u3(h*(i-1),h*(j-1),0.5,tau*(m-(1./2.)));
+    %             plot_data(i,j,3) = plot_data(i,j,1) - plot_data(i,j,2);
+    %         end
+    %     end
 
         % Find the approximation for V at the two-thirds timestep
         % Need to solve system once for each i = 2,...,N
@@ -158,56 +164,68 @@ for p = 1:2
                 % Find boundary values for first and last point, no perturbation
                 % term
                 if perturbation == FULL            
-                    btf = V(i,1,k) - (tau/(2*h^2)) * ...
-                        (V(i,1,k-1) - 2 * V(i,1,k) + V(i,1,k+1));
-                    btl = V(i,N+1,k) - (tau/(2*h^2)) * ...
-                        (V(i,N+1,k-1) - 2 * V(i,N+1,k) + V(i,N+1,k+1));
-                elseif
+    %                 btf = V(i,1,k) - (tau/(2*h^2)) * ...
+    %                     (V(i,1,k-1) - 2 * V(i,1,k) + V(i,1,k+1));
+    %                 btl = V(i,N+1,k) - (tau/(2*h^2)) * ...
+    %                     (V(i,N+1,k-1) - 2 * V(i,N+1,k) + V(i,N+1,k+1));
+    %             elseif perturbation == PARTIAL
+    %                 btf = V(i,1,k) - (tau/(2*h^2)) * ...
+    %                     (V(i,1,k-1) - 2 * V(i,1,k) + V(i,1,k+1));
+    %                 btl = V(i,N+1,k) - (tau/(2*h^2)) * ...
+    %                     (V(i,N+1,k-1) - 2 * V(i,N+1,k) + V(i,N+1,k+1));
                 else
-                    btf = V(i,1,k);
-                    btl = V(i,N+1,k);
+                    btf = U_next(i,1,k) - U(i,1,k);
+                    btl = U_next(i,N+1,k) - U(i,N+1,k);
                 end
 
                 % Find rhs of vector equation
-                b = V(i,2:N,k)';
+                b = U_next(i,2:N,k)';
+                % Add effect of y derivative
+                b = b + (tau/(2*h^2)) * tridiagonal * U(i,2:N,k)';
                 % Add effect of the boundary points
                 b(1) = b(1) + (tau/(2*h^2)) * btf;
                 b(N-1) = b(N-1) + (tau/(2*h^2)) * btl;
                 % Solve for approximate values of V at two-thirds timestep
-                V(i,2:N,k) = (A\b)';
+                U_next(i,2:N,k) = (A\b)';
             end
         end
 
-        % Now find the approximation for V at next whole timestep
+        % Store plot data for debugging
+    %     for i = 1:N+1
+    %         for j = 1:N+1
+    %             plot_data(i,j,4) = U(i,j,3);
+    %             plot_data(i,j,5) = u3(h*(i-1),h*(j-1),0.5,tau*(m-(1./3.)));
+    %             plot_data(i,j,6) = plot_data(i,j,4) - plot_data(i,j,5);
+    %         end
+    %     end
+
+        % Now find the approximation for U at next whole timestep
         % Solve system one for each fixed i and j
         for i = 2:N
             for j = 2:N
-                btf = V(i,j,1);
-                btl = V(i,j,N+1);
+                btf = U_next(i,j,1) - U(i,j,1);
+                btl = U_next(i,j,N+1) - U(i,j,N+1);
 
                 % Get the rhs of the vector equation
-                b = squeeze(V(i,j,2:N));
+                b = squeeze(U_next(i,j,2:N));
+                b = b + (tau/(2*h^2)) * tridiagonal * squeeze(U(i,j,2:N));
                 % Add effect of the boundary points
                 b(1) = b(1) + (tau/(2*h^2)) * btf;
                 b(N-1) = b(N-1) + (tau/(2*h^2)) * btl;
                 % Solve vector equation for the next full timestep
-                V(i,j,2:N) = permute(A\b, [3 2 1]);       
+                U(i,j,2:N) = permute(A\b, [3 2 1]);       
             end
         end
-
-        % Get the next whole timestep for U, the approximation
-        % to the actual solution of the PDE
-        U = U + V;
 
         % Update boundary points
         for i = 0:N
            for j = 0:N
-              U(1,i+1,j+1) = g4(0, h*i, h*j, tau*m);
-              U(N+1, i+1, j+1) = g4(h*N, h*i, h*j, tau*m);
-              U(i+1, 1, j+1) = g4(h*i, 0, h*j, tau*m);
-              U(i+1, N+1, j+1) = g4(h*i, h*N, h*j, tau*m);
-              U(i+1,j+1,1) = g4(h*i, h*j, 0, tau*m);
-              U(i+1, j+1, N+1) = g4(h*i, h*j, h*N, tau*m);
+              U(1,i+1,j+1) = U_next(1,i+1,j+1);
+              U(N+1, i+1, j+1) = U_next(N+1,i+1,j+1);
+              U(i+1, 1, j+1) = U_next(i+1,1,j+1);
+              U(i+1, N+1, j+1) = U_next(i+1,N+1,j+1);
+              U(i+1,j+1,1) = U_next(i+1,j+1,1);
+              U(i+1, j+1, N+1) = U_next(i+1,j+1,N+1);
            end
         end
     end
