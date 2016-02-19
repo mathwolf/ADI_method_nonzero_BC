@@ -79,6 +79,9 @@ for i = 1:N-1
                grid(i,j,k).U = g3(x,y,z);   % use initial condition to fill in the
                                             % value of the approximation
                grid(i,j,k).V = 0.;          % grid function for partial timesteps
+               grid(i,j,k).r = 0;           % row
+               grid(i,j,k).c = 0;           % col
+               grid(i,j,k).s = 0;           % stack
            else
                % The point is an exterior point
                grid(i,j,k).on = FALSE;
@@ -119,10 +122,11 @@ for j = 1:N-1
         row(n_rows).j = j;      % assign the next number in sequence as the
         row(n_rows).k = k;      % index for the current row
         row(n_rows).i_min = i;
-
+        
         % Go along the row until we reach the end or or find an exterior point
         while (i <= N-1) && (grid(i,j,k).on == TRUE)
-           i = i + 1; 
+            grid(i,j,k).r = n_rows;
+            i = i + 1; 
         end
         row(n_rows).i_max = i - 1;
 
@@ -135,7 +139,8 @@ for j = 1:N-1
         row(n_rows).btf.U = g3(row(n_rows).btf.x, row(n_rows).btf.y, ...
             row(n_rows).btf.z);
                 % using initial conditions for first value of U
-
+        row(n_rows).btf.V = 0;
+        
         row(n_rows).btl.y = y_min + hy * j;
         row(n_rows).btl.z = z_min + hz * k;
         
@@ -145,6 +150,7 @@ for j = 1:N-1
         row(n_rows).btl.U = g3(row(n_rows).btl.x, row(n_rows).btl.y, ...
             row(n_rows).btl.z);
                 % using initial conditions
+        row(n_rows).btl.V = 0;
     end
 end
 
@@ -172,7 +178,8 @@ for i = 1:N-1
         % Go through the column until we reach the end or find an exterior
         % point
         while (j <= N-1) && (grid(i,j,k).on == TRUE) 
-           j = j + 1; 
+            grid(i,j,k).c = n_cols;
+            j = j + 1; 
         end
         col(n_cols).j_max = j - 1;
 
@@ -185,7 +192,8 @@ for i = 1:N-1
         col(n_cols).btf.U = g3(col(n_cols).btf.x, col(n_cols).btf.y, ...
             col(n_cols).btf.z);
                 % use initial conditions for first value of U
-
+        col(n_cols).btf.V = 0;
+        
         col(n_cols).btl.x = x_min + hx * i;
         col(n_cols).btl.z = z_min + hz * k;
         col(n_cols).btl.y = theta2(col(n_cols).btl.x, col(n_cols).btl.z);
@@ -194,6 +202,7 @@ for i = 1:N-1
         col(n_cols).btl.U = g3(col(n_cols).btl.x, col(n_cols).btl.y, ...
             col(n_cols).btl.z);
                 % use initial conditions
+        col(n_cols).btl.V = 0;
     end
 end
 
@@ -221,7 +230,8 @@ for i = 1:N-1
         % Go through the column until we reach the end or find an exterior
         % point
         while (k <= N-1) && (grid(i,j,k).on == TRUE) 
-           k = k + 1; 
+            grid(i,j,k).s = n_stacks;
+            k = k + 1; 
         end
         stack(n_stacks).k_max = k - 1;
 
@@ -235,7 +245,8 @@ for i = 1:N-1
         stack(n_stacks).btf.U = g3(stack(n_stacks).btf.x, stack(n_stacks).btf.y, ...
             stack(n_stacks).btf.z);
                 % use initial conditions for first value of U
-
+        stack(n_stacks).btf.V = 0;
+        
         % Add boundary terms for first and last points in current column
         stack(n_stacks).btl.x = x_min + hx * i;
         stack(n_stacks).btl.y = y_min + hy * j;
@@ -246,6 +257,7 @@ for i = 1:N-1
         stack(n_stacks).btl.U = g3(stack(n_stacks).btl.x, stack(n_stacks).btl.y, ...
             stack(n_stacks).btl.z);
                 % use initial conditions for first value of U
+        stack(n_stacks).btl.V = 0;
     end
 end
 
@@ -263,11 +275,334 @@ for i = 1:N - 1
     for j = 1:N - 1
         if grid(i,j,k).on == 1
             plot_data(i,j,1) = grid(i,j,k).U; 
-            plot_data(i,j,2) = u(grid(i,j,k).x, ...
-                grid(i,j,k).y, 0);
+            plot_data(i,j,2) = u3(grid(i,j,k).x, ...
+                grid(i,j,k).y, grid(i,j,k).z, 0);
             plot_data(i,j,3) = plot_data(i,j,1) - plot_data(i,j,2);
         end
     end
+end
+
+for m = 1:M
+        % Update the RHS of step 1.  Here we need derivatives in all
+    % three directions
+    for i = 1:N-1
+        for j = 1:N-1
+           for k = 1:N-1
+              if grid(i,j,k).on == TRUE
+                 grid(i,j,k).V = grid(i,j,k).U;
+                 % add the effect of the x derivative
+                 % first consider the case where we are at the left
+                 % boundary
+                 r = grid(i,j,k).r;
+                 if row(r).i_min == i
+                     % we are next to the left boundary
+                     if row(r).i_max == i
+                         % we are also next to the right boundary
+                         grid(i,j,k).V = grid(i,j,k).V + ...
+                               (tau / (row(r).btf.h_prime + row(r).btl.h_prime) ) * ...
+                               ( (row(r).btl.U - grid(i,j,k).U) / ...
+                               row(r).btl.h_prime ...
+                               - (grid(i,j,k).U - row(r).btf.U) / ...
+                               row(r).btf.h_prime );
+                     else
+                         % left boundary but not right
+                         grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / (row(r).btf.h_prime + hx) ) * ...
+                             ( (grid(i+1,j,k).U - grid(i,j,k).U) / hx ...
+                             - (grid(i,j,k).U - row(r).btf.U) / ...
+                             row(r).btf.h_prime );
+                     end
+                 else 
+                     if row(r).i_max == i
+                        % at the right boundary but not the left
+                        grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / (hx + row(r).btl.h_prime) ) * ...
+                             ( (row(r).btl.U - grid(i,j,k).U) / ...
+                             row(r).btl.h_prime ...
+                             - (grid(i,j,k).U - grid(i-1,j,k).U) / hx);
+                     else
+                         % point is not next to either boundary in x
+                        grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / 2*hx^2) * ...
+                             (grid(i+1,j,k).U - 2*grid(i,j,k).U + ...
+                             grid(i-1,j,k).U);
+                     end
+                 end
+                 
+                 % add the effect of the y derivative
+                 % first consider the case where we are at the left
+                 % boundary
+                 c = grid(i,j,k).c;
+                 if col(c).j_min == j
+                     % we are next to the left boundary
+                     if col(c).j_max == j
+                         % we are also next to the right boundary
+                         grid(i,j,k).V = grid(i,j,k).V + ...
+                               (tau / (col(c).btf.h_prime + col(c).btl.h_prime) ) * ...
+                               ( (col(c).btl.U - grid(i,j,k).U) / ...
+                               col(c).btl.h_prime ...
+                               - (grid(i,j,k).U - col(c).btf.U) / ...
+                               col(c).btf.h_prime );
+                     else
+                         % left boundary but not right
+                         grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / (col(c).btf.h_prime + hy) ) * ...
+                             ( (grid(i,j+1,k).U - grid(i,j,k).U) / hy ...
+                             - (grid(i,j,k).U - col(c).btf.U) / ...
+                             col(c).btf.h_prime );
+                     end
+                 else 
+                     if col(c).j_max == j
+                        % at the right boundary but not the left
+                        grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / (hy + col(c).btl.h_prime) ) * ...
+                             ( (col(c).btl.U - grid(i,j,k).U) / ...
+                             col(c).btl.h_prime ...
+                             - (grid(i,j,k).U - grid(i,j-1,k).U) / hy);
+                     else
+                         % point is not next to either boundary in x
+                        grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / 2*hy^2) * ...
+                             (grid(i,j+1,k).U - 2*grid(i,j,k).U + ...
+                             grid(i,j-1,k).U);
+                     end
+                 end
+                 
+                 % add the effect of the z derivative
+                 % first consider the case where we are at the left
+                 % boundary
+                 s = grid(i,j,k).s;
+                 if stack(s).k_min == k
+                     % we are next to the left boundary
+                     if stack(s).k_max == k
+                         % we are also next to the right boundary
+                         grid(i,j,k).V = grid(i,j,k).V + ...
+                               (tau / (stack(s).btf.h_prime + stack(s).btl.h_prime) ) * ...
+                               ( (stack(s).btl.U - grid(i,j,k).U) / ...
+                               stack(s).btl.h_prime ...
+                               - (grid(i,j,k).U - stack(s).btf.U) / ...
+                               stack(s).btf.h_prime );
+                     else
+                         % left boundary but not right
+                         grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / (stack(s).btf.h_prime + hz) ) * ...
+                             ( (grid(i,j,k+1).U - grid(i,j,k).U) / hz ...
+                             - (grid(i,j,k).U - stack(s).btf.U) / ...
+                             stack(s).btf.h_prime );
+                     end
+                 else 
+                     if stack(s).k_max == k
+                        % at the right boundary but not the left
+                        grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / (hz + stack(s).btl.h_prime) ) * ...
+                             ( (stack(s).btl.U - grid(i,j,k).U) / ...
+                             stack(s).btl.h_prime ...
+                             - (grid(i,j,k).U - grid(i,j,k-1).U) / hz);
+                     else
+                         % point is not next to either boundary in x
+                        grid(i,j,k).V = grid(i,j,k).V + ...
+                             (tau / 2*hz^2) * ...
+                             (grid(i,j,k+1).U - 2*grid(i,j,k).U + ...
+                             grid(i,j,k-1).U);
+                     end
+                 end
+                 
+              end
+           end
+        end
+    end
+    
+    % On the 1/3 timestep, we solve one matrix-vector equation for
+    % each row
+    for r = 1:n_rows
+       j = row(r).j;
+       k = row(r).k;
+       i_min = row(r).i_min;
+       i_max = row(r).i_max;
+       length = i_max - i_min + 1;
+       
+       % Create vectors for rhs of equation
+       b = zeros(length,1);
+       for i = i_min:i_max
+          b(i - i_min + 1) = grid(i,j,k).V; 
+       end
+              
+       % Update the boundary values for the current row
+       row(r).btf.V = g4(row(r).btf.x, row(r).btf.y, row(r).btf.z, tau*m);
+       row(r).btl.V = g4(row(r).btl.x, row(r).btl.y, row(r).btl.z, tau*m);
+       btf.W = row(r).btf.U + row(r).btf.V;
+       btf.h_prime = row(r).btf.h_prime;
+       btl.W = row(r).btl.U + row(r).btl.V;
+       btl.h_prime = row(r).btl.h_prime;       
+       
+       % Add effect of boundary pts to rhs of equation
+       % First, case where there is only one interior point in the row
+       if length == 1
+            b(1) = b(1) + ...
+                (tau/((btf.h_prime + btl.h_prime) * btf.h_prime) ) * btf.W + ...
+                (tau/((btf.h_prime + btl.h_prime) * btl.h_prime) ) * btl.W;
+       % Case where A is is 2 x 2 or larger
+       else
+            b(1) = b(1) + (tau/((hx + btf.h_prime) * btf.h_prime) ) * btf.W;
+            b(length) = b(length) + ...
+                (tau/((hx + btl.h_prime) * btl.h_prime) ) * btl.W;
+       end
+       
+       % Set up tridiagonal matrix on lhs of equation
+       A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
+                        [-1,0,1], length, length);
+       A = (tau/(2*hx^2)) * A;
+       
+       % Adjust first and last row of matrix since boundary points are 
+       % unevenly spaced.  First, case when A is 1 x 1
+       if length == 1
+           A(1,1) = 1 + tau / (btf.h_prime * btl.h_prime);           
+       % Case where A is 2 x 2 or larger
+       else
+            A(1,1) = tau / (hx * btf.h_prime);
+            A(1,2) = - tau / (hx * (hx + btf.h_prime));
+            A(length, length - 1) = - tau / (hx * (hx + btl.h_prime));
+            A(length, length) = tau / (hx * btl.h_prime);
+            A = speye(length) + A ;
+       end
+       
+       % Solve the vector equation
+       b = A\b;
+       
+       % Store the values of V for the current row
+       for i = i_min:i_max
+           grid(i,j,k).V = b(i - i_min + 1);
+       end                   
+    end
+    
+    % On the 2/3 timestep, we solve one matrix-vector equation for
+    % each col
+    for c = 1:n_cols
+       i = col(c).i;
+       k = col(c).k;
+       j_min = col(c).j_min;
+       j_max = col(c).j_max;
+       length = j_max - j_min + 1;
+       
+       % Create vectors for rhs of equation
+       b = zeros(length,1);
+       for j = j_min:j_max
+          b(j - j_min + 1) = grid(i,j,k).V; 
+       end
+                     
+       % Update the boundary values for the current col
+       col(c).btf.V = g4(col(c).btf.x, col(c).btf.y, col(c).btf.z, tau*m);
+       col(c).btl.V = g4(col(c).btl.x, col(c).btl.y, col(c).btl.z, tau*m);
+       btf.W = col(c).btf.V - col(c).btf.U;
+       btf.h_prime = row(r).btf.h_prime;
+       btl.W = row(r).btl.V - row(r).btl.U;
+       btl.h_prime = row(r).btl.h_prime;       
+       
+       % Add effect of boundary pts to rhs of equation
+       % First, case where there is only one interior point in the row
+       if length == 1
+            b(1) = b(1) + ...
+                (tau/((btf.h_prime + btl.h_prime) * btf.h_prime) ) * btf.W + ...
+                (tau/((btf.h_prime + btl.h_prime) * btl.h_prime) ) * btl.W;
+       % Case where A is is 2 x 2 or larger
+       else
+            b(1) = b(1) + (tau/((hy + btf.h_prime) * btf.h_prime) ) * btf.W;
+            b(length) = b(length) + ...
+                (tau/((hy + btl.h_prime) * btl.h_prime) ) * btl.W;
+       end
+       
+       % Set up tridiagonal matrix on lhs of equation
+       A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
+                        [-1,0,1], length, length);
+       A = (tau/(2*hy^2)) * A;
+       
+       % Adjust first and last row of matrix since boundary points are 
+       % unevenly spaced.  First, case when A is 1 x 1
+       if length == 1
+           A(1,1) = 1 + tau / (btf.h_prime * btl.h_prime);           
+       % Case where A is 2 x 2 or larger
+       else
+            A(1,1) = tau / (hy * btf.h_prime);
+            A(1,2) = - tau / (hy * (hy + btf.h_prime));
+            A(length, length - 1) = - tau / (hy * (hy + btl.h_prime));
+            A(length, length) = tau / (hy * btl.h_prime);
+            A = speye(length) + A ;
+       end
+       
+       % Solve the vector equation
+       b = A\b;
+       
+       % Store the values of V for the current col
+       for j = j_min:j_max
+           grid(i,j,k).V = b(j - j_min + 1);
+       end                   
+    end
+
+    % Find the approximation to the PDE at the next whole timestep
+    % Solve one matrix-vector equation for each stack   
+    for s = 1:n_stacks
+       i = stack(s).i;
+       j = stack(s).j;
+       k_min = stack(s).k_min;
+       k_max = stack(s).k_max;
+       length = k_max - k_min + 1;
+       
+       % Create vectors for rhs of equation
+       b = zeros(length,1);
+       for k = k_min:k_max
+          b(k - k_min + 1) = grid(i,j,k).V; 
+       end
+                     
+       % Update the boundary values for the current stack
+       stack(s).btf.V = g4(stack(s).btf.x, stack(s).btf.y, stack(s).btf.z, tau*m);
+       stack(s).btl.V = g4(stack(s).btl.x, stack(s).btl.y, stack(s).btl.z, tau*m);
+       btf.W = col(c).btf.V - col(c).btf.U;
+       btf.h_prime = row(r).btf.h_prime;
+       btl.W = row(r).btl.V - row(r).btl.U;
+       btl.h_prime = row(r).btl.h_prime;       
+       
+       % Add effect of boundary pts to rhs of equation
+       % First, case where there is only one interior point in the row
+       if length == 1
+            b(1) = b(1) + ...
+                (tau/((btf.h_prime + btl.h_prime) * btf.h_prime) ) * btf.W + ...
+                (tau/((btf.h_prime + btl.h_prime) * btl.h_prime) ) * btl.W;
+       % Case where A is is 2 x 2 or larger
+       else
+            b(1) = b(1) + (tau/((hz + btf.h_prime) * btf.h_prime) ) * btf.W;
+            b(length) = b(length) + ...
+                (tau/((hz + btl.h_prime) * btl.h_prime) ) * btl.W;
+       end
+       
+       % Set up tridiagonal matrix on lhs of equation
+       A = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
+                        [-1,0,1], length, length);
+       A = (tau/(2*hz^2)) * A;
+       
+       % Adjust first and last row of matrix since boundary points are 
+       % unevenly spaced.  First, case when A is 1 x 1
+       if length == 1
+           A(1,1) = 1 + tau / (btf.h_prime * btl.h_prime);           
+       % Case where A is 2 x 2 or larger
+       else
+            A(1,1) = tau / (hz * btf.h_prime);
+            A(1,2) = - tau / (hz * (hz + btf.h_prime));
+            A(length, length - 1) = - tau / (hz * (hz + btl.h_prime));
+            A(length, length) = tau / (hz * btl.h_prime);
+            A = speye(length) + A ;
+       end
+       
+       % Solve the vector equation
+       b = A\b;
+       
+       % Store the values of U for the current stack
+       for k = k_min:k_max
+           grid(i,j,k).U = b(k - k_min + 1);
+       end                   
+    end
+    
+    
+
 end
 
 % Create plots
@@ -276,21 +611,21 @@ Y = linspace(y_min + hy, y_max - hy, N - 1);
 
 %Extra plots for debuging
 figure
-subplot(3,3,1)
+subplot(1,3,1)
 surf(X,Y,plot_data(:,:,1))
 colormap winter
 xlabel('x')
 ylabel('y')
 title('Approximate solution at initial condition')
 
-subplot(3,3,2)
+subplot(1,3,2)
 surf(X,Y,plot_data(:,:,2))
 colormap winter
 xlabel('x')
 ylabel('y')
 title('Exact solution at initial condition')
 
-subplot(3,3,3)
+subplot(1,3,3)
 surf(X,Y,plot_data(:,:,3));
 colormap winter;
 xlabel('x')
