@@ -59,7 +59,7 @@ else
    z_max = 1;
 end
 
-N = 5;
+N = 20;
 hx = (x_max - x_min)/N;
 hy = (y_max - y_min)/N;
 hz = (z_max - z_min)/N;
@@ -96,20 +96,20 @@ for i = 1:N-1
 end
 
 % Display the initial state of the approximation for debugging
-display_data = zeros(N-1,N-1);
-for k = 1:N-1
-    for i = 1:N-1
-       for j = 1:N-1
-           if (grid(i,j,k).on == TRUE)
-               display_data(i,j) = grid(i,j,k).U;
-           else
-               display_data(i,j) = 9.9999;
-           end
-       end
-    end
-    disp(k);
-    disp(display_data);
-end
+% display_data = zeros(N-1,N-1);
+% for k = 1:N-1
+%     for i = 1:N-1
+%        for j = 1:N-1
+%            if (grid(i,j,k).on == TRUE)
+%                display_data(i,j) = grid(i,j,k).U;
+%            else
+%                display_data(i,j) = 9.9999;
+%            end
+%        end
+%     end
+%     disp(k);
+%     disp(display_data);
+% end
         
 % Create a data structure that describes the rows of the grid.
 n_rows = 0;
@@ -572,19 +572,17 @@ for m = 1:M
        % Update the boundary values for the current col
        col(c).btf.V = g4(col(c).btf.x, col(c).btf.y, col(c).btf.z, tau*m);
        col(c).btl.V = g4(col(c).btl.x, col(c).btl.y, col(c).btl.z, tau*m);
-       btf.W = col(c).btf.V - col(c).btf.U;
        btf.h_prime = col(c).btf.h_prime;
-       btl.W = col(c).btl.V - col(c).btl.U;
        btl.h_prime = col(c).btl.h_prime;       
        
        % Add effect of boundary pts to rhs of equation
        % First, case where there is only one interior point in the row
-       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-       % This case has not been updated to match the longer rows below
        if length == 1
-            b(1) = b(1) + ...
-                (tau/((btf.h_prime + btl.h_prime) * btf.h_prime) ) * btf.W + ...
-                (tau/((btf.h_prime + btl.h_prime) * btl.h_prime) ) * btl.W;
+            b(1) = grid(i,j_min,k).V - tau/(btf.h_prime + btl.h_prime) *...
+                ( (col(c).btf.U - grid(i,j_min,k).U)/btf.h_prime - ...
+                (grid(i,j_min,k).U - col(c).btl.U)/btl.h_prime) + ...
+                tau/(btf.h_prime + btl.h_prime) * ...
+                ( col(c).btf.V/btf.h_prime + col(c).btl.V/btl.h_prime );
        % Case where A is is 2 x 2 or larger
        else
             b(1) = grid(i,j_min,k).V - tau/(hy + btf.h_prime) * ...
@@ -658,12 +656,12 @@ for m = 1:M
        
        % Add effect of boundary pts to rhs of equation
        % First, case where there is only one interior point in the row
-       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55555
-       % Not yet changed to match longer stacks below
        if length == 1
-            b(1) = b(1) + ...
-                (tau/((btf.h_prime + btl.h_prime) * btf.h_prime) ) * btf.W + ...
-                (tau/((btf.h_prime + btl.h_prime) * btl.h_prime) ) * btl.W;
+            b(1) = grid(i,j,k_min).V - tau/(btf.h_prime + btl.h_prime) *...
+                ( (stack(s).btf.U - grid(i,j,k_min).U)/btf.h_prime - ...
+                (grid(i,j,k_min).U - stack(s).btl.U)/btl.h_prime) + ...
+                tau/(btf.h_prime + btl.h_prime) * ...
+                ( stack(s).btf.V/btf.h_prime + stack(s).btl.V/btl.h_prime );
        % Case where A is is 2 x 2 or larger
        else
             b(1) = grid(i,j,k_min).V - tau/(hz + btf.h_prime) * ...
