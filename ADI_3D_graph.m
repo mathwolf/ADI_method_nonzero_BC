@@ -95,10 +95,26 @@ for i = 1:N-1
    end
 end
 
+% Display the initial state of the approximation for debugging
+display_data = zeros(N-1,N-1);
+for k = 1:N-1
+    for i = 1:N-1
+       for j = 1:N-1
+           if (grid(i,j,k).on == TRUE)
+               display_data(i,j) = grid(i,j,k).U;
+           else
+               display_data(i,j) = 9.9999;
+           end
+       end
+    end
+    disp(k);
+    disp(display_data);
+end
+        
 % Create a data structure that describes the rows of the grid.
 n_rows = 0;
-for j = 1:N-1
-    for k = 1:N-1
+for k = 1:N-1
+    for j = 1:N-1
         % Go along the row until we reach the end or find an interior point.
         i = 1;
         while (i <= N-1) && (grid(i,j,k).on == FALSE)
@@ -146,6 +162,15 @@ for j = 1:N-1
         row(n_rows).btl.V = 0;
     end
 end
+
+% Display row data for debugging
+% for n = 1:n_rows
+%    disp(n);
+%    disp(row(n).btf.h_prime);
+%    disp(row(n).btl.h_prime);
+%    disp(row(n).btf.U);
+%    disp(row(n).btl.U);
+% end
 
 % Create a data structure that describes the columns of the grid.
 n_cols = 0;
@@ -198,6 +223,15 @@ for i = 1:N-1
         col(n_cols).btl.V = 0;
     end
 end
+
+% % Display cols for debugging
+% for n = 1:n_cols
+%    disp(n);
+%    disp(col(n).btf.h_prime);
+%    disp(col(n).btl.h_prime);
+%    disp(col(n).btf.U);
+%    disp(col(n).btl.U);
+% end
 
 % Create a data structure that describes the stacks of the grid.
 n_stacks = 0;
@@ -254,6 +288,15 @@ for i = 1:N-1
     end
 end
 
+% % Display stacks for debugging
+% for n = 1:n_stacks
+%    disp(n);
+%    disp(stack(n).btf.h_prime);
+%    disp(stack(n).btl.h_prime);
+%    disp(stack(n).btf.U);
+%    disp(stack(n).btl.U);
+% end
+
 % Define temporal grid.  Use a timestep of the same size as the larger of
 % the two spactial grids. Go to time 1.
 tau = max([hx hy hz]);
@@ -283,7 +326,6 @@ for m = 1:M
         for j = 1:N-1
            for k = 1:N-1
               if grid(i,j,k).on == TRUE
-                 grid(i,j,k).V = grid(i,j,k).U;
                  % add the effect of the x derivative
                  % first consider the case where we are at the left
                  % boundary
@@ -292,7 +334,7 @@ for m = 1:M
                      % we are next to the left boundary
                      if row(r).i_max == i
                          % we are also next to the right boundary
-                         grid(i,j,k).V = grid(i,j,k).V + ...
+                         grid(i,j,k).V = grid(i,j,k).U + ...
                                (tau / (row(r).btf.h_prime + row(r).btl.h_prime) ) * ...
                                ( (row(r).btl.U - grid(i,j,k).U) / ...
                                row(r).btl.h_prime ...
@@ -300,7 +342,7 @@ for m = 1:M
                                row(r).btf.h_prime );
                      else
                          % left boundary but not right
-                         grid(i,j,k).V = grid(i,j,k).V + ...
+                         grid(i,j,k).V = grid(i,j,k).U + ...
                              (tau / (row(r).btf.h_prime + hx) ) * ...
                              ( (grid(i+1,j,k).U - grid(i,j,k).U) / hx ...
                              - (grid(i,j,k).U - row(r).btf.U) / ...
@@ -309,23 +351,31 @@ for m = 1:M
                  else 
                      if row(r).i_max == i
                         % at the right boundary but not the left
-                        grid(i,j,k).V = grid(i,j,k).V + ...
+                        grid(i,j,k).V = grid(i,j,k).U + ...
                              (tau / (hx + row(r).btl.h_prime) ) * ...
                              ( (row(r).btl.U - grid(i,j,k).U) / ...
                              row(r).btl.h_prime ...
                              - (grid(i,j,k).U - grid(i-1,j,k).U) / hx);
                      else
                          % point is not next to either boundary in x
-                        grid(i,j,k).V = grid(i,j,k).V + ...
-                             (tau / 2*hx^2) * ...
+                        grid(i,j,k).V = grid(i,j,k).U + ...
+                             (tau / (2*hx^2)) * ...
                              (grid(i+1,j,k).U - 2*grid(i,j,k).U + ...
                              grid(i-1,j,k).U);
                      end
                  end
-                 
+              end
+           end
+        end
+    end
+        %%%%%% Redo the extra looping after debugging is over
+        for i = 1:N-1
+            for j = 1:N-1
+                for k = 1:N-1
                  % add the effect of the y derivative
                  % first consider the case where we are at the left
                  % boundary
+              if grid(i,j,k).on == TRUE
                  c = grid(i,j,k).c;
                  if col(c).j_min == j
                      % we are next to the left boundary
@@ -361,6 +411,15 @@ for m = 1:M
                              grid(i,j-1,k).U);
                      end
                  end
+                end
+            end
+            end
+        end
+                
+        for i = 1:N-1
+            for j = 1:N-1
+                for k = 1:N-1
+              if grid(i,j,k).on == TRUE
                  
                  % add the effect of the z derivative
                  % first consider the case where we are at the left
@@ -400,6 +459,15 @@ for m = 1:M
                              grid(i,j,k-1).U);
                      end
                  end
+              end
+                end
+            end
+        end
+        
+        for i = 1:N-1
+            for j = 1:N-1
+                for k = 1:N-1
+                    if (grid(i,j,k).on == TRUE)
                  % Add the effect of the forcing term
                  x = grid(i,j,k).x;
                  y = grid(i,j,k).y;
@@ -485,7 +553,7 @@ for m = 1:M
        j_max = col(c).j_max;
        length = j_max - j_min + 1;
        
-       % Set up tridiagonal matrix on lhs of equation
+       % Set up tridiagonal matrix for lhs of equation
        tridiagonal = spdiags([-ones(length,1), 2*ones(length,1), -ones(length,1)], ...
                         [-1,0,1], length, length);
        tridiagonal = (tau/(2*hy^2)) * tridiagonal;
@@ -499,7 +567,7 @@ for m = 1:M
        end
        
        % Add effects of y-derivative
-       b = b + (tau/(2*hy^2))*tridiagonal*d;
+       b = b + tridiagonal*d;
                      
        % Update the boundary values for the current col
        col(c).btf.V = g4(col(c).btf.x, col(c).btf.y, col(c).btf.z, tau*m);
@@ -511,15 +579,22 @@ for m = 1:M
        
        % Add effect of boundary pts to rhs of equation
        % First, case where there is only one interior point in the row
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+       % This case has not been updated to match the longer rows below
        if length == 1
             b(1) = b(1) + ...
                 (tau/((btf.h_prime + btl.h_prime) * btf.h_prime) ) * btf.W + ...
                 (tau/((btf.h_prime + btl.h_prime) * btl.h_prime) ) * btl.W;
        % Case where A is is 2 x 2 or larger
        else
-            b(1) = b(1) + (tau/((hy + btf.h_prime) * btf.h_prime) ) * btf.W;
-            b(length) = b(length) + ...
-                (tau/((hy + btl.h_prime) * btl.h_prime) ) * btl.W;
+            b(1) = grid(i,j_min,k).V - tau/(hy + btf.h_prime) * ...
+                ( (col(c).btf.U - grid(i,j_min,k).U) / btf.h_prime - ...
+                (grid(i,j_min,k).U - grid(i,j_min+1,k).U) / hy ) + ...
+                tau/((hy + btf.h_prime)*btf.h_prime) * col(c).btf.V;
+            b(length) = grid(i,j_max,k).V - tau/(hy + btl.h_prime) * ...
+                ( (col(c).btl.U - grid(i,j_max,k).U) / btl.h_prime - ...
+                (grid(i,j_max,k).U - grid(i,j_max-1,k).U) / hy ) + ...
+                tau/((hy + btl.h_prime)*btl.h_prime) * col(c).btl.V;
        end
        
        % Adjust first and last row of matrix since boundary points are 
@@ -571,7 +646,7 @@ for m = 1:M
        end
        
        % Add effects of the z-derivative
-       b = b + (tau/(2*hz^2)) * tridiagonal * d;
+       b = b + tridiagonal * d;
                      
        % Update the boundary values for the current stack
        stack(s).btf.V = g4(stack(s).btf.x, stack(s).btf.y, stack(s).btf.z, tau*m);
@@ -583,15 +658,22 @@ for m = 1:M
        
        % Add effect of boundary pts to rhs of equation
        % First, case where there is only one interior point in the row
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55555
+       % Not yet changed to match longer stacks below
        if length == 1
             b(1) = b(1) + ...
                 (tau/((btf.h_prime + btl.h_prime) * btf.h_prime) ) * btf.W + ...
                 (tau/((btf.h_prime + btl.h_prime) * btl.h_prime) ) * btl.W;
        % Case where A is is 2 x 2 or larger
        else
-            b(1) = b(1) + (tau/((hz + btf.h_prime) * btf.h_prime) ) * btf.W;
-            b(length) = b(length) + ...
-                (tau/((hz + btl.h_prime) * btl.h_prime) ) * btl.W;
+            b(1) = grid(i,j,k_min).V - tau/(hz + btf.h_prime) * ...
+                ( (stack(s).btf.U - grid(i,j,k_min).U) / btf.h_prime - ...
+                (grid(i,j,k_min).U - grid(i,j,k_min+1).U) / hz ) + ...
+                tau/((hz + btf.h_prime)*btf.h_prime) * stack(s).btf.V;
+            b(length) = grid(i,j,k_max).V - tau/(hz + btl.h_prime) * ...
+                ( (stack(s).btl.U - grid(i,j,k_max).U) / btl.h_prime - ...
+                (grid(i,j,k_max).U - grid(i,j,k_max-1).U) / hz ) + ...
+                tau/((hz + btl.h_prime)*btl.h_prime) * stack(s).btl.V;
        end
        
        % Adjust first and last row of matrix since boundary points are 
