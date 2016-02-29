@@ -23,7 +23,7 @@ elseif test_solution == EXPONENT_2
 elseif test_solution == POLY
     w = 10 - 240*x - 40*y^3 + 120*y*z - 120*y*z^2;
 elseif test_solution == EXPONENT_3
-    w = exp(x*y*z*t)*(x*y*z - t^2 * ( x^2*y^2 + x^2*z^2 + y^2*z^2));
+    W = exp(x*y*z*t)*(x*y*z - t^2 * ( x^2*y^2 + x^2*z^2 + y^2*z^2));
 end
 
 end

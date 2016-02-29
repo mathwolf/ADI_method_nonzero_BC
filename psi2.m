@@ -1,20 +1,23 @@
 function x = psi2(y)
 
 % Constants used to switch between different domains for testing.
-CIRCLE = 1;
-ELLIPSE = 2;
-DIAMOND = 3;
+SPHERE = 1;
+ELLIPSOID = 2;
+OCTAHEDRON = 3;
 ELL = 4;
 RECTANGLE = 5;
 DIAMOND_2 = 6;
+CUBE = 7;
 global domain
 
 % Upper boundary of test domain wrt y
-if domain == CIRCLE
+if domain == SPHERE
     x = sqrt(1. - y^2);
-elseif domain == ELLIPSE
+elseif domain == ELLIPSOID
     x = sqrt(1. - (2.*y)^2);
-elseif domain == DIAMOND
+elseif domain == CUBE
+    x = 1;
+elseif domain == OCTAHEDRON
     if (-1 <= y) && (y <= 0)
         x =  y + 1;
     elseif (0 <= y) && (y <= 1)

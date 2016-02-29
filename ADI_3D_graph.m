@@ -18,15 +18,15 @@ global test_solution
 test_solution = EXPONENT_1;
 
 % Constants used to switch between different test domains.
-CIRCLE = 1;
-ELLIPSE = 2;
+SPHERE = 1;
+ELLIPSOID = 2;
 DIAMOND = 3;
 ELL = 4;
 RECTANGLE = 5;
 DIAMOND_2 = 6;
 CUBE = 7;
 global domain
-domain = CIRCLE;
+domain = RECTANGLE;
 
 % Description of spatial grid.  We divide both the x and y dimensions of
 % the problem into the same number of gridpoints.  First, identify the min 
@@ -34,16 +34,27 @@ domain = CIRCLE;
 % a subset of the big rectangle defined by these values.
 
 % For now, we are just defaulting to a cube of side length 2.
-if domain == ELLIPSE
+if domain == ELLIPSOID
    x_min = -1;
    x_max = 1;
    y_min = -0.5;
    y_max = 0.5;
+   z_min = -0.25;
+   z_max = 0.25;
+elseif domain == CUBE
+   x_min = 0;
+   x_max = 1;
+   y_min = 0;
+   y_max = 1;
+   z_min = 0;
+   z_max = 1;
 elseif domain == RECTANGLE
    x_min = -1;
    x_max = 1;
    y_min = -0.5;
-   y_max = 0.5;    
+   y_max = 0.5; 
+   z_min = -0.25;
+   z_max = 0.25;
 elseif domain == DIAMOND_2
    x_min = -1;
    x_max = 0.5;
@@ -59,7 +70,7 @@ else
    z_max = 1;
 end
 
-N = 20;
+N = 10;
 hx = (x_max - x_min)/N;
 hy = (y_max - y_min)/N;
 hz = (z_max - z_min)/N;
@@ -110,7 +121,7 @@ end
 %     disp(k);
 %     disp(display_data);
 % end
-        
+   
 % Create a data structure that describes the rows of the grid.
 n_rows = 0;
 for k = 1:N-1
@@ -364,18 +375,9 @@ for m = 1:M
                              grid(i-1,j,k).U);
                      end
                  end
-              end
-           end
-        end
-    end
-        %%%%%% Redo the extra looping after debugging is over
-        for i = 1:N-1
-            for j = 1:N-1
-                for k = 1:N-1
                  % add the effect of the y derivative
                  % first consider the case where we are at the left
                  % boundary
-              if grid(i,j,k).on == TRUE
                  c = grid(i,j,k).c;
                  if col(c).j_min == j
                      % we are next to the left boundary
@@ -411,16 +413,6 @@ for m = 1:M
                              grid(i,j-1,k).U);
                      end
                  end
-                end
-            end
-            end
-        end
-                
-        for i = 1:N-1
-            for j = 1:N-1
-                for k = 1:N-1
-              if grid(i,j,k).on == TRUE
-                 
                  % add the effect of the z derivative
                  % first consider the case where we are at the left
                  % boundary

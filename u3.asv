@@ -21,7 +21,7 @@ elseif test_solution == EXPONENT_2
 elseif test_solution == POLY
     w = 40*x^3 - 60*x^2*y*z + 20*y^3*z^2 + 10*t;
 elseif test_solution == EXPONENT_3
-    w = exp(x*y*z*t);
+    W = exp(x*y*z*t);
 end
 
 end

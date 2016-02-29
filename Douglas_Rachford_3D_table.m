@@ -11,8 +11,10 @@ EXPONENT_1 = 1;
 EXPONENT_2 = 2;
 TRIG = 3;
 POLY = 4;
+EXPONENT_3 = 5;
+
 global test_solution
-test_solution = EXPONENT_0; % exp test function with 0 BC
+test_solution = EXPONENT_3; % exp test function with 0 BC
 
 % Turn on or off perturbation on half step boundary conditions
 OFF = 0;
@@ -26,7 +28,7 @@ table_data = zeros(5,6);
 % Check five different grid sizes. Each step will decrease the size by 
 % half.
 
-for p = 1:5
+for p = 1:4
     
     % Use a spatial grid of 0.2 times 2 to the power p-1
     N = 5 * 2^(p-1);

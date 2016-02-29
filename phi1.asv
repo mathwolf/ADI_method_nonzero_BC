@@ -17,7 +17,7 @@ elseif domain == ELLIPSOID
     y = - 0.5 * sqrt(1. - x^2);
 elseif domain == CUBE
     y = 0;
-elseif domain == OCTAHEDRON
+elseif domain == DIAMOND
     if (-1 <= x) && (x <= 0)
         y = -x - 1;
     elseif (0 <= x) && (x <= 1)
