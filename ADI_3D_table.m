@@ -16,7 +16,7 @@ EXPONENT_2 = 2;
 TRIG = 3;
 POLYNOMIAL = 4;
 global test_solution
-test_solution = EXPONENT_0;
+test_solution = EXPONENT_1;
 
 % Constants used to switch between different test domains.
 SPHERE = 1;
@@ -27,7 +27,7 @@ RECTANGLE = 5;
 DIAMOND_2 = 6;
 CUBE = 7;
 global domain
-domain = CUBE;
+domain = OCTAHEDRON;
 
 % Description of spatial grid.  We divide both the x and y dimensions of
 % the problem into the same number of gridpoints.  First, identify the min 
@@ -247,7 +247,7 @@ for p = 1:5
             end
             stack(n_stacks).k_max = k - 1;
 
-            % Add boundary terms for first and last points in current column
+            % Add boundary terms for first and last points in current stack
             stack(n_stacks).btf.x = x_min + hx * i;
             stack(n_stacks).btf.y = y_min + hy * j;
             stack(n_stacks).btf.z = zeta1(stack(n_stacks).btf.x, ...
@@ -259,7 +259,6 @@ for p = 1:5
                     % use initial conditions for first value of U
             stack(n_stacks).btf.V = 0;
 
-            % Add boundary terms for first and last points in current column
             stack(n_stacks).btl.x = x_min + hx * i;
             stack(n_stacks).btl.y = y_min + hy * j;
             stack(n_stacks).btl.z = zeta2(stack(n_stacks).btl.x, ...
@@ -540,7 +539,7 @@ for p = 1:5
            % Adjust first and last row of matrix since boundary points are 
            % unevenly spaced.  First, case when A is 1 x 1
            if length == 1
-               A(1,1) = 1 + tau / (btf.h_prime * btl.h_prime);           
+               A = 1 + tau / (btf.h_prime * btl.h_prime);           
            % Case where A is 2 x 2 or larger
            else
                 A = tridiagonal;
@@ -551,6 +550,7 @@ for p = 1:5
                 A = speye(length) + A ;
            end
 
+           
            % Solve the vector equation
            b = A\b;
 
@@ -591,15 +591,13 @@ for p = 1:5
            % Update the boundary values for the current stack
            stack(s).btf.V = g4(stack(s).btf.x, stack(s).btf.y, stack(s).btf.z, tau*m);
            stack(s).btl.V = g4(stack(s).btl.x, stack(s).btl.y, stack(s).btl.z, tau*m);
-           btf.W = stack(s).btf.V - stack(s).btf.U;
            btf.h_prime = stack(s).btf.h_prime;
-           btl.W = stack(s).btl.V - stack(s).btl.U;
            btl.h_prime = stack(s).btl.h_prime;       
 
            % Add effect of boundary pts to rhs of equation
            % First, case where there is only one interior point in the row
            if length == 1
-                b(1) = grid(i,j,k_min).V - tau/(btf.h_prime + btl.h_prime) *...
+                b(1) = grid(i,j,k_min).V - tau/(btf.h_prime + btl.h_prime) * ...
                     ( (stack(s).btf.U - grid(i,j,k_min).U)/btf.h_prime - ...
                     (grid(i,j,k_min).U - stack(s).btl.U)/btl.h_prime) + ...
                     tau/(btf.h_prime + btl.h_prime) * ...
@@ -619,7 +617,7 @@ for p = 1:5
            % Adjust first and last row of matrix since boundary points are 
            % unevenly spaced.  First, case when A is 1 x 1
            if length == 1
-               A(1,1) = 1 + tau / (btf.h_prime * btl.h_prime);           
+               A = 1 + tau / (btf.h_prime * btl.h_prime);           
            % Case where A is 2 x 2 or larger
            else
                 A = tridiagonal;
@@ -647,6 +645,9 @@ for p = 1:5
     max_nodal_error = 0;
     nodal_error_squared = 0;    
     root_mean_sq_error = 0;
+    debug_i = 0;
+    debug_j = 0;
+    debug_k = 0;
 
     for i = 1:N-1
        for j = 1:N-1
@@ -658,13 +659,19 @@ for p = 1:5
                       max_nodal_error = current_error; 
                    end
                    nodal_error_squared = nodal_error_squared + current_error^2;
+                   debug_i = i;
+                   debug_j = j;
+                   debug_k = k;
                end
            end
        end
     end
     root_mean_sq_error = sqrt(hx*hy*hz * nodal_error_squared);
 
-    
+    disp(debug_i);
+    disp(debug_j);
+    disp(debug_k);
+    disp(99999);
     % Write data to table
     table_data(p,1) = tau;
     table_data(p,2) = max_nodal_error;
@@ -687,6 +694,6 @@ end
 disp('    h                  max error          order of conv');
 disp(table_data(:,1:3));
 disp('    h                  rms error          order of conv');
-disp(table_data(:,4:6));
+        disp(table_data(:,4:6));
 end
 
