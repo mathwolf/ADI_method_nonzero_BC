@@ -17,9 +17,6 @@ TRIG = 4;
 
 global test_function = EXPONENT_0;
 
-OFF = 0;
-ON = 1;
-PERTURBATION = ON;
 
 % Use a uniform spatial grid of 0.01 in both x and y
 N = 100;

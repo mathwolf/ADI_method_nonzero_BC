@@ -18,8 +18,7 @@ elseif test_solution == EXPONENT_2
     z = exp(x + 2*y + 3*t);
 elseif test_solution == EXPONENT_3
     z = exp(x*y*t);
-elseif test_solution == TRIG
-    z = 2 * sin(10*(x^2+y^2+t^2));
+elseif test
 else
     z = 0;
 end
