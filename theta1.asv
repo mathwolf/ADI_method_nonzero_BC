@@ -1,4 +1,4 @@
-function y = theta2(x,z)
+function y = theta1(x,z)
 
 % Constants used to switch between different domains for testing.
 SPHERE = 1;
@@ -11,41 +11,28 @@ CUBE = 7;
 global domain
 
 if domain == SPHERE
-    y = sqrt(1. - x^2 - z^2);
+    y = - sqrt(1. - x^2 - z^2);
 elseif domain == ELLIPSOID
-    y = 0.5 * sqrt(1. - x^2 - 16.*z^2);
+    y = - 0.5 * sqrt(1. - x^2 - 16.*z^2);
 elseif domain == CUBE
-    y = 1;
+    y = 0;
 elseif domain == OCTAHEDRON
     if z >= 0
         if x >= 0
-            y = - z - x + 1;
+            y = z + x - 1;
         else
-            y = - z + x + 1;
+            y = z - x - 1;
         end
     else
         if x >= 0
-            y = z - x + 1;
+            y = - z + x - 1;
         else
-            y = z + x + 1;
+            y = - z - x - 1;
         end
     end
 elseif domain == ELL
-    if z <= 0
-        if x <= 0
-            y = 1;
-        else
-            y = 0;
-        end
-    else
-        if x <= 0
-            y = 0;
-        else
-            y = 1;
-        end
-    end
 elseif domain == RECTANGLE
-    y = 0.5;
+    y = -0.5;
 end
 
 end

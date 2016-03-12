@@ -34,13 +34,7 @@ elseif domain == DIAMOND_2
         y = 0;
     end
 elseif domain == ELL
-    if (-1 <= x) && (x <= 0)
-        y = 0;
-    elseif (0 <= x) && (x <= 1)
-        y = - 1;
-    else
-        y = 0;
-    end
+    y = -1;
 elseif domain == RECTANGLE
     y = -0.5;
 end

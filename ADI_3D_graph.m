@@ -26,7 +26,7 @@ RECTANGLE = 5;
 DIAMOND_2 = 6;
 CUBE = 7;
 global domain
-domain = RECTANGLE;
+domain = ELL;
 
 % Description of spatial grid.  We divide both the x and y dimensions of
 % the problem into the same number of gridpoints.  First, identify the min 

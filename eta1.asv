@@ -1,4 +1,4 @@
-function x = eta2(y,z)
+function x = eta1(y,z)
 
 % Constants used to switch between different domains for testing.
 SPHERE = 1;
@@ -11,41 +11,37 @@ CUBE = 7;
 global domain
 
 if domain == SPHERE
-    x = sqrt(1. - y^2 - z^2);
+    x = - sqrt(1. - y^2 - z^2);
 elseif domain == ELLIPSOID
-    x = sqrt(1. - 4.*y^2 - 16.*z^2);
+    x = - sqrt(1. - 4.*y^2 - 16.*z^2);
 elseif domain == CUBE
-    x = 1.;
+    x = 0;
 elseif domain == OCTAHEDRON
     if y >= 0
         if z >= 0
-            x = - y - z + 1;
+            x = y + z - 1;
         else
-            x = - y + z + 1;
+            x = y - z - 1;
         end
     else
         if z >= 0
-            x = y - z + 1;
+            x = - y + z - 1;
         else
-            x = y + z + 1;
+            x = - y - z - 1;
         end
     end
 elseif domain == ELL
     if y <= 0
         if z <= 0
-            x = 1;
+            
         else
-            x = 0;
+            
         end
     else
-        if z <= 0
-            x = 1;
-        else
-            x = 1;
-        end
+        
     end
 elseif domain == RECTANGLE
-    x = 1.;
+    x = -1.;
 end
 
 end

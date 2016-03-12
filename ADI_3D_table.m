@@ -27,7 +27,7 @@ RECTANGLE = 5;
 DIAMOND_2 = 6;
 CUBE = 7;
 global domain
-domain = OCTAHEDRON;
+domain = ELL;
 
 % Description of spatial grid.  We divide both the x and y dimensions of
 % the problem into the same number of gridpoints.  First, identify the min 
@@ -75,7 +75,7 @@ table_data = zeros(5,6);
 % Check five different grid sizes. Each step will decrease the size by 
 % half.
 
-for p = 1:5
+for p = 1:3
     
     % Use a spatial grid of 0.4 times 2 to the power p-1
     N = 5 * 2^(p-1);
@@ -277,7 +277,18 @@ for p = 1:5
     tau = max([hx hy hz]);
     M = floor(1./tau) + 1;
 
-
+%    For debugging
+    for k = 1:N-1
+       for j = 1:N-1
+          for i = 1:N-1
+             disp(i);
+             disp(j);
+             disp(k);
+             disp(grid(i,j,k)); 
+          end
+       end
+    end
+    
     % Step through the scheme
     for m = 1:M
         % Update the RHS of step 1.  Here we need derivatives in all

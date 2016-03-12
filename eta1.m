@@ -30,6 +30,20 @@ elseif domain == OCTAHEDRON
             x = - y - z - 1;
         end
     end
+elseif domain == ELL
+    if y <= 0
+        if z <= 0
+            x = -1;
+        else
+            x = -1;
+        end
+    else
+        if z <= 0
+            x = 0;
+        else
+            x = 0;
+        end
+    end
 elseif domain == RECTANGLE
     x = -1.;
 end
