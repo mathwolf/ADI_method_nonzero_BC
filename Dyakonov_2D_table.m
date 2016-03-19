@@ -15,11 +15,11 @@ EXPONENT_3 = 3;
 TRIG = 4;
 
 global test_solution 
-test_solution = EXPONENT_2;
+test_solution = EXPONENT_0;
 
 OFF = 0;
 ON = 1;
-PERTURBATION = ON;
+PERTURBATION = OFF;
 
 % Table for storing error data
 table_data = zeros(5,6);
@@ -27,7 +27,7 @@ table_data = zeros(5,6);
 % Check five different grid sizes. Each step will decrease the size by 
 % half.
 
-for p = 1:2
+for p = 1:5
     
     % Use a spatial grid of 0.1 times 2 to the power p-1
     N = 5 * 2^(p-1);
