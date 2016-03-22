@@ -14,11 +14,12 @@ EXPONENT_1 = 1;
 EXPONENT_2 = 2;
 TRIG = 3;
 POLY = 4;
+EXPONENT_3 = 5;
 global test_solution
-test_solution = EXPONENT_1; % exp test function with 0 BC
+test_solution = EXPONENT_0; 
 
 % Turn on or off perturbation on half step boundary conditions
-perturbation = TRUE;
+perturbation = FALSE;
 
 % Table for storing error data
 table_data = zeros(5,6);
@@ -29,7 +30,7 @@ table_data = zeros(5,6);
 for p = 1:5
     
     % Use a spatial grid of 0.1 times 2 to the power p-1
-    N = 10 * 2^(p-1);
+    N = 5 * 2^(p-1);
     h = 1./N;
     
     % Use a temporal spacing of the same size, go to 1 second

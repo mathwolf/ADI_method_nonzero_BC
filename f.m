@@ -7,6 +7,7 @@ EXPONENT_1 = 1;
 EXPONENT_2 = 2;
 TRIG = 3;
 POLY = 4;
+EXPONENT_3 = 5;
 global test_solution
 
 if test_solution == TRIG
@@ -18,6 +19,8 @@ elseif test_solution == EXPONENT_1
     z = - exp(x+y+t);
 elseif test_solution == EXPONENT_2
     z = - 12 * exp(3*x + 2*y + t);
+elseif test_solution == EXPONENT_3
+    z = (x*y - t^2*x^2 - t^2*y^2)*exp(x*y*t);
 elseif test_solution == POLY
     z = 10 - 240*x;
 end

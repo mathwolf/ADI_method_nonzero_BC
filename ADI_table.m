@@ -10,12 +10,13 @@ TRUE = 1;
 FALSE = 0;
 
 % Constants used to switch between different test functions.
+EXPONENT_0 = 0;
 EXPONENT_1 = 1;
 EXPONENT_2 = 2;
 TRIG = 3;
 POLYNOMIAL = 4;
-global test_solution
-test_solution = EXPONENT_1;
+EXPONENT_3 = 5;
+global test_solution;
 
 % Constants used to switch between different test domains.
 CIRCLE = 1;
@@ -24,11 +25,9 @@ DIAMOND = 3;
 ELL = 4;
 RECTANGLE = 5;
 DIAMOND_2 = 6;
-global domain
-domain = CIRCLE;
 
-% Table for storing error data
-table_data = zeros(5,4);
+global domain
+domain = ELLIPSE;
 
 % Description of spatial domain.  We divide both the x and y dimensions of
 % the problem into the same number of gridpoints.  First, identify the min 
@@ -57,12 +56,22 @@ else
    y_max = 1;
 end
 
+% Test four different test functions.
+for q = 1:5
+    if q == 4
+        % Skip the polynomial test solution
+        continue;
+    end
+    test_solution = q;
+    % Table for storing error data
+    table_data = zeros(5,6);
+
 % Test five different grids: N = 20, 40, 80, ...
 for p = 1:5
     % Description of spatial grid.  We divide the problem into N equally
     % spaced intervals in both x and y.  The grid goes The actual domain 
     % of the PDE will be a subset of these gridpoints.
-    N = 10. * 2^p;
+    N = 10. * 2^(p-1);
     hx = (x_max - x_min)/N;
     hy = (y_max - y_min)/N;
     
@@ -361,6 +370,8 @@ for p = 1:5
     
     % Evaluate error at final timestep
     max_nodal_error = 0;
+    nodal_error_squared = 0;    
+    root_mean_sq_error = 0;
     
     for r = 1:n_rows
         j = row(r).j;
@@ -372,22 +383,34 @@ for p = 1:5
            if current_error > max_nodal_error
               max_nodal_error = current_error; 
            end
+           nodal_error_squared = nodal_error_squared + current_error^2;
         end
     end
+    root_mean_sq_error = sqrt(hx * hy * nodal_error_squared);
     
     % Write data to table
-    table_data(p,1) = N;
+    table_data(p,1) = tau;
     table_data(p,2) = max_nodal_error;
-    table_data(p,4) = tau;
     if p ~= 1
        % estimate order of convergence for max err
        table_data(p,3) = log(table_data(p-1,2) / table_data(p,2)) / ...
-           log(table_data(p-1,4) / table_data(p,4)); 
+           log(table_data(p-1,1) / table_data(p,1)); 
     end   
+    table_data(p,4) = tau;
+    table_data(p,5) = root_mean_sq_error;
+    if p ~= 1
+       % estimate order of convergence for rms err
+       table_data(p,6) = log(table_data(p-1,5) / table_data(p,5)) / ...
+           log(table_data(p-1,4) / table_data(p,4));
+    end
     
 end
-
-% Display table of error information
-disp('    N                  max error          order of conv');
-disp(table_data(:,1:3));
+    % Display index for test function
+    disp(q);
+    % Display table of error information
+    disp('    h                  max error          order of conv');
+    disp(table_data(:,1:3));
+    disp('    h                  rms error          order of conv');
+    disp(table_data(:,4:6));
+    end
 end
