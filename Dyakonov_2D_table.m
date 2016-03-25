@@ -15,7 +15,7 @@ EXPONENT_3 = 3;
 TRIG = 4;
 
 global test_solution 
-test_solution = EXPONENT_0;
+test_solution = EXPONENT_3;
 
 OFF = 0;
 ON = 1;
