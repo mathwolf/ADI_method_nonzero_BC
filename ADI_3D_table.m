@@ -27,7 +27,7 @@ RECTANGLE = 5;
 DIAMOND_2 = 6;
 CUBE = 7;
 global domain
-domain = ELL;
+domain = SPHERE;
 
 % Description of spatial grid.  We divide both the x and y dimensions of
 % the problem into the same number of gridpoints.  First, identify the min 
@@ -75,7 +75,7 @@ table_data = zeros(5,6);
 % Check five different grid sizes. Each step will decrease the size by 
 % half.
 
-for p = 1:3
+for p = 4:5
     
     % Use a spatial grid of 0.4 times 2 to the power p-1
     N = 5 * 2^(p-1);
