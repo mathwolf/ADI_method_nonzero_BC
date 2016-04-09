@@ -18,8 +18,8 @@ elseif test_solution == EXPONENT_2
 elseif test_solution == EXPONENT_3
     z = (x*y - x^2*t^2 - y^2*t^2) * exp(x*y*t);
 elseif test_solution == TRIG
-    z = 40*(t-2)*cos(10*(x^2+y^2+t^2)) + ...
-        800*(x^2+y^2)*sin(10*(x^2+y^2+t^2));
+    z = 640*(16*x^2+y^2)*cos(16*x^2+4*y^2+t) + ...
+        390*sin(16*x^2+4*y^2+t);
 else
     z = 0;
 end
