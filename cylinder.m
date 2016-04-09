@@ -95,11 +95,18 @@ table_data = zeros(5,6);
 % half.
 
 % Check three different test functions
+for q = 2:4
+    if q == 4
+        q = 5;
+    end
+    test_solution = q;
+    disp('Test function');
+    disp(q);
 
-for p = 1:3
+for p = 1:5
     
     % Use a spatial grid of 0.4 times 2 to the power p-1
-    N = 8 * 2^(p-1);
+    N = 5 * 2^(p-1);
     hx = (x_max - x_min)/N;
     hy = (y_max - y_min)/N;
     hz = (z_max - z_min)/N;
@@ -763,5 +770,4 @@ disp(table_data(:,1:3));
 disp('    h                  rms error          order of conv');
         disp(table_data(:,4:6));
 end
-
-
+end
