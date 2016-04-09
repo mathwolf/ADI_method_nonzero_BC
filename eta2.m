@@ -8,10 +8,16 @@ ELL = 4;
 RECTANGLE = 5;
 DIAMOND_2 = 6;
 CUBE = 7;
+CIRCLE_CYLINDER = 8;
+ELLIPSE_CYLINDER = 9;
 global domain
 
 if domain == SPHERE
     x = sqrt(1. - y^2 - z^2);
+elseif domain == CIRCLE_CYLINDER
+    x = sqrt(1 - y^2);
+elseif domain == ELLIPSE_CYLINDER
+    x = sqrt(1. - (2.*y)^2);
 elseif domain == ELLIPSOID
     x = sqrt(1. - 4.*y^2 - 16.*z^2);
 elseif domain == CUBE
@@ -33,7 +39,7 @@ elseif domain == OCTAHEDRON
 elseif domain == ELL
     if y <= 0
         if z <= 0
-            x = 1;
+            x = 0;
         else
             x = 0;
         end

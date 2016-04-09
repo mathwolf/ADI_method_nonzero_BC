@@ -15,6 +15,8 @@ if domain == SPHERE
     x = - sqrt(1. - y^2);
 elseif domain == ELLIPSOID
     x = - sqrt(1. - (2.*y)^2);
+elseif domain == ELLIPSE_CYLINDER
+    x = - sqrt(1. - (2.*y)^2);
 elseif domain == CUBE
     x = 0;
 elseif domain == OCTAHEDRON
@@ -37,5 +39,7 @@ elseif domain == ELL
     x = -1.;
 elseif domain == RECTANGLE
     x = -1.;
+elseif domain == CIRCLE_CYLINDER
+    x = - sqrt(1 - y^2);
 end
 end

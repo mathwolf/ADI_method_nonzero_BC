@@ -8,12 +8,17 @@ ELL = 4;
 RECTANGLE = 5;
 DIAMOND_2 = 6;
 CUBE = 7;
+
+CIRCLE_CYLINDER = 8;
+ELLIPSE_CYLINDER = 9;
 global domain
 
 % Upper boundary of test domain wrt x
 if domain == SPHERE
     y = sqrt(1. - x^2);
 elseif domain == ELLIPSOID
+    y = 0.5 * sqrt(1. - x^2);
+elseif domain == ELLIPSE_CYLINDER
     y = 0.5 * sqrt(1. - x^2);
 elseif domain == CUBE
     y = 1;
@@ -37,6 +42,8 @@ elseif domain == ELL
     y = 1;
 elseif domain == RECTANGLE
     y = 0.5;
+elseif domain == CIRCLE_CYLINDER
+    y = sqrt(1. - x^2);    
 end
 end
 

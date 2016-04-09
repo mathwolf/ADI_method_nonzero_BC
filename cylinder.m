@@ -1,4 +1,4 @@
-function ADI_3D_table()
+function cylinder()
 
 % Matlab R2013a
 
@@ -19,8 +19,6 @@ EXPONENT_3 = 5;
 global test_solution
 test_solution = EXPONENT_1;
 
-
-
 % Constants used to switch between different test domains.
 SPHERE = 1;
 ELLIPSOID = 2;
@@ -33,16 +31,8 @@ CUBE = 7;
 CIRCLE_CYLINDER = 8;
 ELLIPSE_CYLINDER = 9;
 
-for r = 2:6
-    if r == 5
-        r = 8;
-    elseif r == 6
-        r = 9;
-    end
-    disp('Domain');
-    disp(r);
 global domain
-domain = r;
+domain = ELLIPSE_CYLINDER;
 
 % Description of spatial grid.  We divide both the x and y dimensions of
 % the problem into the same number of gridpoints.  First, identify the min 
@@ -57,13 +47,6 @@ if domain == ELLIPSOID
    y_max = 0.5;
    z_min = -0.25;
    z_max = 0.25;
-elseif domain == CIRCLE_CYLINDER
-    x_min = -1;
-    x_max = 1;
-    y_min = -1;
-    y_max = 1;
-    z_min = 0;
-    z_max = 1;
 elseif domain == CUBE
    x_min = 0;
    x_max = 1;
@@ -81,6 +64,20 @@ elseif domain == DIAMOND_2
    x_max = 0.5;
    y_min = -1;
    y_max = 0.5;    
+elseif domain == CIRCLE_CYLINDER
+    x_min = -1;
+    x_max = 1;
+    y_min = -1;
+    y_max = 1;
+    z_min = 0;
+    z_max = 1;
+elseif domain == ELLIPSE_CYLINDER
+    x_min = -1;
+    x_max = 1;
+    y_min = -0.5;
+    y_max = 0.5;
+    z_min = 0;
+    z_max = 1;
 else
     % all the other test domains have the same spatial range
    x_min = -1;
@@ -99,16 +96,10 @@ table_data = zeros(5,6);
 
 % Check three different test functions
 
-for q = 2:4
-    if q == 4
-        q = 5;
-    end
-    test_solution = q;
-    disp(q);
-for p = 1:5
+for p = 1:3
     
     % Use a spatial grid of 0.4 times 2 to the power p-1
-    N = 5 * 2^(p-1);
+    N = 8 * 2^(p-1);
     hx = (x_max - x_min)/N;
     hy = (y_max - y_min)/N;
     hz = (z_max - z_min)/N;
@@ -133,7 +124,7 @@ for p = 1:5
                    (theta1(x,z) + 10^(-10) < y) && ...
                    (y < theta2(x,z) - 10^(-10))
                    
-                   % The point is an interior point
+                   % The point is an interio point
                    grid(i,j,k).on = TRUE; 
                    grid(i,j,k).x = x;
                    grid(i,j,k).y = y;
@@ -487,9 +478,22 @@ for p = 1:5
               b(i - i_min + 1) = grid(i,j,k).V; 
            end
 
-           % Update the boundary values for the current row
-           row(r).btf.V = g4(row(r).btf.x, row(r).btf.y, row(r).btf.z, tau*m);
-           row(r).btl.V = g4(row(r).btl.x, row(r).btl.y, row(r).btl.z, tau*m);
+           % Update the boundary values for the current row,
+           % using partial perturbation in the z-direction
+           row(r).btf.V = g4(row(r).btf.x, row(r).btf.y, row(r).btf.z, tau*m) ...
+                - (tau/(2*hz^2)) * (g4(row(r).btf.x, row(r).btf.y, row(r).btf.z - hz, tau*m) ...
+                    - 2*g4(row(r).btf.x, row(r).btf.y, row(r).btf.z, tau*m) ...
+                    + g4(row(r).btf.x, row(r).btf.y, row(r).btf.z + hz, tau*m)) ...
+                + (tau/(2*hz^2)) * (g4(row(r).btf.x, row(r).btf.y, row(r).btf.z - hz, tau*(m-1)) ...
+                    - 2*g4(row(r).btf.x, row(r).btf.y, row(r).btf.z, tau*(m-1)) ...
+                    + g4(row(r).btf.x, row(r).btf.y, row(r).btf.z + hz, tau*(m-1)));
+           row(r).btl.V = g4(row(r).btl.x, row(r).btl.y, row(r).btl.z, tau*m) ...
+                - (tau/(2*hz^2)) * (g4(row(r).btl.x, row(r).btl.y, row(r).btl.z - hz, tau*m) ...
+                    - 2*g4(row(r).btl.x, row(r).btl.y, row(r).btl.z, tau*m) ...
+                    + g4(row(r).btl.x, row(r).btl.y, row(r).btl.z + hz, tau*m)) ...
+                + (tau/(2*hz^2)) * (g4(row(r).btl.x, row(r).btl.y, row(r).btl.z - hz, tau*(m-1)) ...
+                    - 2*g4(row(r).btl.x, row(r).btl.y, row(r).btl.z, tau*(m-1)) ...
+                    + g4(row(r).btl.x, row(r).btl.y, row(r).btl.z + hz, tau*(m-1)));
            btf.h_prime = row(r).btf.h_prime;
            btl.h_prime = row(r).btl.h_prime;       
 
@@ -514,7 +518,7 @@ for p = 1:5
            % Adjust first and last row of matrix since boundary points are 
            % unevenly spaced.  First, case when A is 1 x 1
            if length == 1
-               A(1,1) = 1 + tau / (btf.h_prime * btl.h_prime);           
+               A = 1 + tau / (btf.h_prime * btl.h_prime);           
            % Case where A is 2 x 2 or larger
            else
                 A(1,1) = tau / (hx * btf.h_prime);
@@ -562,8 +566,20 @@ for p = 1:5
            b = b + tridiagonal*d;
 
            % Update the boundary values for the current col
-           col(c).btf.V = g4(col(c).btf.x, col(c).btf.y, col(c).btf.z, tau*m);
-           col(c).btl.V = g4(col(c).btl.x, col(c).btl.y, col(c).btl.z, tau*m);
+           col(c).btf.V = g4(col(c).btf.x, col(c).btf.y, col(c).btf.z, tau*m) ...
+                - (tau/(2*hz^2)) * (g4(col(c).btf.x, col(c).btf.y, col(c).btf.z - hz, tau*m) ...
+                    - 2*g4(col(c).btf.x, col(c).btf.y, col(c).btf.z, tau*m) ...
+                    + g4(col(c).btf.x, col(c).btf.y, col(c).btf.z + hz, tau*m)) ...
+                + (tau/(2*hz^2)) * (g4(col(c).btf.x, col(c).btf.y, col(c).btf.z - hz, tau*(m-1)) ...
+                    - 2*g4(col(c).btf.x, col(c).btf.y, col(c).btf.z, tau*(m-1)) ...
+                    + g4(col(c).btf.x, col(c).btf.y, col(c).btf.z + hz, tau*(m-1)));
+           col(c).btl.V = g4(col(c).btl.x, col(c).btl.y, col(c).btl.z, tau*m) ...
+                - (tau/(2*hz^2)) * (g4(col(c).btl.x, col(c).btl.y, col(c).btl.z - hz, tau*m) ...
+                    - 2*g4(col(c).btl.x, col(c).btl.y, col(c).btl.z, tau*m) ...
+                    + g4(col(c).btl.x, col(c).btl.y, col(c).btl.z + hz, tau*m)) ...
+                + (tau/(2*hz^2)) * (g4(col(c).btl.x, col(c).btl.y, col(c).btl.z - hz, tau*(m-1)) ...
+                    - 2*g4(col(c).btl.x, col(c).btl.y, col(c).btl.z, tau*(m-1)) ...
+                    + g4(col(c).btl.x, col(c).btl.y, col(c).btl.z + hz, tau*(m-1)));
            btf.h_prime = col(c).btf.h_prime;
            btl.h_prime = col(c).btl.h_prime;       
 
@@ -696,9 +712,9 @@ for p = 1:5
     max_nodal_error = 0;
     nodal_error_squared = 0;    
     root_mean_sq_error = 0;
-%     debug_i = 0;
-%     debug_j = 0;
-%     debug_k = 0;
+    debug_i = 0;
+    debug_j = 0;
+    debug_k = 0;
 
     for i = 1:N-1
        for j = 1:N-1
@@ -708,21 +724,21 @@ for p = 1:5
                        u3(grid(i,j,k).x, grid(i,j,k).y, grid(i,j,k).z, tau*m));
                    if current_error > max_nodal_error
                       max_nodal_error = current_error; 
-%                         debug_i = i;
-%                         debug_j = j;
-%                         debug_k = k;
                    end
                    nodal_error_squared = nodal_error_squared + current_error^2;
+                   debug_i = i;
+                   debug_j = j;
+                   debug_k = k;
                end
            end
        end
     end
     root_mean_sq_error = sqrt(hx*hy*hz * nodal_error_squared);
 
-%      disp(debug_i);
-%      disp(debug_j);
-%      disp(debug_k);
-%      disp(99999);
+%     disp(debug_i);
+%     disp(debug_j);
+%     disp(debug_k);
+%     disp(99999);
     % Write data to table
     table_data(p,1) = tau;
     table_data(p,2) = max_nodal_error;
@@ -747,5 +763,5 @@ disp(table_data(:,1:3));
 disp('    h                  rms error          order of conv');
         disp(table_data(:,4:6));
 end
-end
-end
+
+
