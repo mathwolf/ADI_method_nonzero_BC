@@ -33,7 +33,7 @@ CUBE = 7;
 CIRCLE_CYLINDER = 8;
 ELLIPSE_CYLINDER = 9;
 
-for r = 2:6
+for r = 1:1
     if r == 5
         r = 8;
     elseif r == 6
@@ -99,7 +99,7 @@ table_data = zeros(5,6);
 
 % Check three different test functions
 
-for q = 2:4
+for q = 4:4
     if q == 4
         q = 5;
     end
